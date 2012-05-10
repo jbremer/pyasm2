@@ -52,8 +52,12 @@ class MemoryAddress:
     def __init__(self, size=None, segment=None, reg1=None, reg2=None,
             mult=None, disp=None):
         """Create a new Memory Address."""
-        assert size in (None, 8, 16, 32, 64, 128)
+        assert size is None or size in (8, 16, 32, 64, 128)
         assert segment is None or isinstance(segment, SegmentRegister)
+        assert reg1 is None or isinstance(reg1, GeneralPurposeRegister)
+        assert reg2 is None or isinstance(reg2, GeneralPurposeRegister)
+        assert mult is None or mult in (1, 2, 4, 8)
+        assert disp is None or disp >= 0 and disp < 2**32
 
         self.size = size
         self.segment = segment
