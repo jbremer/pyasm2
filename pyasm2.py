@@ -66,7 +66,7 @@ class MemoryAddress:
         """Merge self with a Displacement, Register or Memory Address."""
         # it is not possible to merge with one of the predefined Memory
         # Addresses
-        assert self not in (byte, word, dword, qword)
+        assert id(self) not in map(id, (byte, word, dword, qword))
 
         if isinstance(other, (int, long)):
             assert other >= 0 and other < 2**32 and self.disp is None
@@ -207,6 +207,13 @@ class MemoryAddress:
     def __repr__(self):
         """Representation of this Memory Address."""
         return self.__str__()
+
+    def __cmp__(self, other):
+        """Check if two elements are the same, or not."""
+        return 0 if self.size == other.size and \
+            self.segment == other.segment and \
+            self.reg1 == other.reg1 and self.reg2 == other.reg2 and \
+            self.mult == other.mult and self.disp == other.disp else -1
 
 # define the size for the memory addresses
 byte = MemoryAddress(size=8)
