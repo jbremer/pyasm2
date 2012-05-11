@@ -40,6 +40,14 @@ class CheckSyntax(unittest.TestCase):
         eq(m(dword[esi+eax], ebx), '\x1c\x06')
         eq(m(esi, dword[edi]), '\x37')
         eq(m(ecx, dword[edx+ebp+0xdeadf00d]), '\x8c\x2a\x0d\xf0\xad\xde')
+        eq(m(edi, dword[esi*8]), '\x3c\xf5\x00\x00\x00\x00')
+        eq(m(edx, dword[ebp+eax*4]), '\x54\x85\x00')
+        eq(m(eax, dword[eax+0x7f]), '\x40\x7f')
+        eq(m(eax, dword[eax+0x80]), '\x80\x80\x00\x00\x00')
+        eq(m(eax, dword[eax-0x80]), '\x40\x80')
+        eq(m(eax, dword[eax-0x81]), '\x80\x7f\xff\xff\xff')
+        eq(m(eax, dword[eax-2]), '\x40\xfe')
+        eq(m(eax, dword[eax+0x40]), '\x40\x40')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

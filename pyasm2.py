@@ -378,30 +378,14 @@ class Instruction:
                         index = 4
                         S = 0
                         rm = 4
-                        if op2.disp is not None:
-                            # TODO add 8bit displacement support
-                            mod = 2
-                            buf = struct.pack('I', op2.disp)
-                        else:
-                            mod = 0
+                        mod = 2
                     # special case for `ebp', since it requires a displacement
                     elif op2.reg1.index == 5:
                         rm = 5
-                        if op2.disp is not None:
-                            # TODO add 8bit displacement support
-                            mod = 2
-                            buf = struct.pack('I', op2.disp)
-                        else:
-                            mod = 1
-                            buf = '\x00'
+                        mod = 3
                     else:
                         rm = op2.reg1.index
-                        if op2.disp is not None:
-                            # TODO add 8bit displacement support
-                            mod = 2
-                            buf = struct.pack('I', op2.disp)
-                        else:
-                            mod = 0
+                        mod = 2
                 # special case for `esp', since it requires the sib byte
                 elif op2.reg1.index == 4:
                     sib = True
@@ -409,12 +393,7 @@ class Instruction:
                     index = op2.reg2.index
                     S = mults[op2.mult]
                     rm = 4
-                    if op2.disp is not None:
-                        # TODO add 8bit displacement support
-                        mod = 2
-                        buf = struct.pack('I', op2.disp)
-                    else:
-                        mod = 0
+                    mod = 2
                 # special case for `ebp', since it requires a displacement
                 elif op2.reg1.index == 5:
                     sib = True
@@ -422,25 +401,34 @@ class Instruction:
                     S = mults[op2.mult]
                     base = 5
                     rm = 4
-                    if op2.disp is not None:
-                        # TODO add 8bit displacement support
-                        mod = 2
-                        buf = struct.pack('I', op2.disp)
-                    else:
-                        mod = 1
-                        buf = '\x00'
+                    mod = 3
                 else:
                     sib = True
                     rm = 4
                     base = op2.reg1.index
                     index = op2.reg2.index
                     S = mults[op2.mult]
-                    if op2.disp is not None:
-                        # TODO add 8bit displacement support
-                        mod = 2
-                        buf = struct.pack('I', op2.disp)
-                    else:
-                        mod = 0
+                    mod = 2
+
+        # if `mod' is two here, then there can be either a 8bit, 32bit or no
+        # displacement at all. when `mod' is three, there has to be either a
+        # 8bit displacement or a 32bit one.
+        if mod in (2, 3):
+            if op2.disp is None:
+                if mod == 3:
+                    mod = 1
+                    buf = '\x00'
+                else:
+                    mod = 0
+            elif op2.disp >= 0 and op2.disp < 0x80:
+                mod = 1
+                buf = chr(op2.disp)
+            elif op2.disp >= 0xffffff80 and op2.disp < 2**32:
+                mod = 1
+                buf = chr(op2.disp & 0xff)
+            else:
+                mod = 2
+                buf = struct.pack('I', op2.disp)
 
         # construct the modrm byte
         ret = chr((mod << 6) + (reg << 3) + rm)
