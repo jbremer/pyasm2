@@ -19,6 +19,21 @@ The syntax of pyasm2 is supposed to be as simple as possible.
 """
 import struct
 
+class Immediate:
+    """Defines Immediates, has the ability to treat immediates as addresses."""
+    def __init__(self, value=0, addr=False):
+        self.value = value
+        self.addr = addr
+
+    def __int__(self):
+        return self.value
+
+    def __long__(self):
+        return self.value
+
+    def __cmp__(self, other):
+        return self.value != int(other)
+
 class SegmentRegister:
     """Defines the Segment Registers."""
     def __init__(self, index, name):
@@ -58,14 +73,14 @@ class MemoryAddress:
         assert reg1 is None or isinstance(reg1, GeneralPurposeRegister)
         assert reg2 is None or isinstance(reg2, GeneralPurposeRegister)
         assert mult is None or mult in (1, 2, 4, 8)
-        assert disp is None or disp >= 0 and disp < 2**32
+        assert disp is None or int(disp) >= 0 and int(disp) < 2**32
 
         self.size = size
         self.segment = segment
         self.reg1 = reg1
         self.reg2 = reg2
         self.mult = mult
-        self.disp = disp
+        self.disp = Immediate(disp) if isinstance(disp, (int, long)) else disp
 
         self.clean()
 
@@ -101,10 +116,11 @@ class MemoryAddress:
         # Addresses
         assert id(self) not in map(id, (byte, word, dword, qword))
 
-        if isinstance(other, (int, long)):
-            assert other >= 0 and other < 2**32 and self.disp is None
+        if isinstance(other, (int, long, Immediate)):
+            assert int(other) >= 0 and int(other) < 2**32 and self.disp is None
 
             self.disp = other
+
             return self.clean()
 
         if isinstance(other, GeneralPurposeRegister):
@@ -176,7 +192,7 @@ class MemoryAddress:
         # for encoding general purpose registers
         f = lambda x: x.index + 1 if x is not None else 0
         return \
-            (self.disp if self.disp is not None else 0) + \
+            (int(self.disp) if self.disp is not None else 0) + \
             (f(self.reg1) << 32) + \
             (f(self.reg2) << 36) + \
             (mults[self.mult] << 40)
@@ -227,7 +243,7 @@ class MemoryAddress:
                 str(self.reg2) + '*' + str(self.mult)
             s += q if not len(s) else '+' + q
         if self.disp is not None:
-            q = '0x%x' % self.disp
+            q = '0x%x' % int(self.disp)
             s += q if not len(s) else '+' + q
         if self.size is not None:
             if self.segment is not None:
@@ -263,7 +279,7 @@ class GeneralPurposeRegister:
 
     def __add__(self, other):
         """self + other"""
-        if isinstance(other, (int, long)):
+        if isinstance(other, (int, long, Immediate)):
             return MemoryAddress(reg1=self, disp=other)
         if isinstance(other, GeneralPurposeRegister):
             return MemoryAddress(reg1=self, reg2=other, mult=1)
@@ -423,12 +439,12 @@ class Instruction:
                         buf = '\x00'
                     else:
                         mod = 0
-                elif op2.disp >= 0 and op2.disp < 0x80:
+                elif int(op2.disp) >= 0 and int(op2.disp) < 0x80:
                     mod = 1
-                    buf = chr(op2.disp)
-                elif op2.disp >= 0xffffff80 and op2.disp < 2**32:
+                    buf = chr(int(op2.disp))
+                elif int(op2.disp) >= 0xffffff80 and int(op2.disp) < 2**32:
                     mod = 1
-                    buf = chr(op2.disp & 0xff)
+                    buf = chr(int(op2.disp) & 0xff)
                 else:
                     mod = 2
                     buf = struct.pack('I', op2.disp)
