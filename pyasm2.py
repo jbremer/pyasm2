@@ -40,21 +40,21 @@ class Immediate:
 class SegmentRegister:
     """Defines the Segment Registers."""
     def __init__(self, index, name):
-        """Create a new Segment Register with an index and name."""
         self.index = index
         self.name = name
 
     def __str__(self):
-        """Representation of this register."""
         return self.name
 
     def __repr__(self):
-        """Representation of this register."""
         return self.name
 
     def __index__(self):
-        """Index of this register."""
         return self.index
+
+# make an alias `imm' to Immediate in order to simplify the creation of
+# Instruction's
+imm = Immediate
 
 # define each segment register.
 es = ES = SegmentRegister(0, 'es')
@@ -96,10 +96,11 @@ class MemoryAddress:
         1 when `reg1' is None.
 
         Note that we can't use `esp' directly, because it's not initialized
-        the first time(s) we call this function, therefore we use it's index,
+        the first time(s) we call this function, therefore we use its index,
         which is 4.
 
         """
+        # `esp' can't have a multiplier other than one.
         if self.reg2 is not None:
             assert self.reg2.index != 4 or self.mult == 1
 
@@ -185,9 +186,9 @@ class MemoryAddress:
         3  bits - mult
 
         If the displacement is None, it will be encoded as 0, and will be
-            decoded as None later.
+        decoded as None later.
         General Purpose Registers are encoded as their `index' increased with
-            one, or 0 if None.
+        one, or 0 if None.
         Multiplication is encoded using a table, which can be found below.
 
         """
@@ -280,10 +281,13 @@ word = MemoryAddress(size=16)
 dword = MemoryAddress(size=32)
 qword = MemoryAddress(size=64)
 
+# make an alias `mem' to MemoryAddress in order to simplify the creation of
+# Instruction's
+mem = MemoryAddress
+
 class GeneralPurposeRegister:
     """Defines the General Purpose Registers."""
     def __init__(self, index, name):
-        """Create a new General Purpose Register with an index and name."""
         self.index = index
         self.name = name
 
@@ -314,11 +318,9 @@ class GeneralPurposeRegister:
         return MemoryAddress(reg2=self, mult=other)
 
     def __str__(self):
-        """Representation of this register."""
         return self.name
 
     def __repr__(self):
-        """Representation of this register."""
         return self.name
 
     def __index__(self):
@@ -337,6 +339,10 @@ edi = EDI = GeneralPurposeRegister(7, 'edi')
 
 # array of general purpose registers, according to their index
 GeneralPurposeRegister.register = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
+
+# make an alias `gpr' to GeneralPurposeRegister in order to simplify the
+# creation of Instruction's
+gpr = GeneralPurposeRegister
 
 class Instruction:
     """Base class for every instruction.
