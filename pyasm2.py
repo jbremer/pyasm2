@@ -73,7 +73,8 @@ class MemoryAddress:
             is as easy as possible.
 
         For example, we don't want `esp' in `reg2' (and `esp' can't have a
-        `mult' other than one.
+        `mult' other than one. Neither do we want to have a `reg2' with `mult'
+        1 when `reg1' is None.
 
         Note that we can't use `esp' directly, because it's not initialized
         the first time(s) we call this function, therefore we use it's index,
@@ -86,6 +87,10 @@ class MemoryAddress:
         # swap registers if `reg2' contains `esp'
         if self.reg2 is not None and self.reg2.index == 4:
             self.reg1, self.reg2 = self.reg2, self.reg1
+
+        # store `reg2' as `reg1' if `reg1' is None and `mult' is one.
+        if self.reg1 is None and self.mult == 1:
+            self.reg1, self.reg2, self.mult = self.reg2, None, None
 
         return self
 
