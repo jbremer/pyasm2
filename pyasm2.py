@@ -34,6 +34,9 @@ class Immediate:
     def __cmp__(self, other):
         return self.value != int(other)
 
+    def __str__(self):
+        return '0x%x' % self.value
+
 class SegmentRegister:
     """Defines the Segment Registers."""
     def __init__(self, index, name):
@@ -269,7 +272,7 @@ class MemoryAddress:
         assert self.size is not None
 
         fmt = {8: 'B', 16: 'H', 32: 'I', 64: 'Q'}
-        return struct.pack(fmt[self.size], value)
+        return struct.pack(fmt[self.size], int(value))
 
 # define the size for the memory addresses
 byte = MemoryAddress(size=8)
@@ -336,12 +339,28 @@ edi = EDI = GeneralPurposeRegister(7, 'edi')
 GeneralPurposeRegister.register = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
 
 class Instruction:
-    """Base class for every instruction."""
+    """Base class for every instruction.
+
+    Instructions that don't take any operands place their opcode as integer or
+    string in `_opcode_'.
+    Instructions that have one or more (maximum of three) operands fill the
+    `_enc_' table, one entry per encoding. The layout of this encoding is a
+    list of tuples, with a layout like the following.
+
+    (opcode, operand1, operand2, operand3)
+
+    `opcode' is an integer or string representing the opcode of this encoding.
+    `operand1', `operand2' and `operand3' are tuples defining the size and
+    type of operand, `operand2' and `operand3' are obviously optional. If an
+    operand is not a tuple, it defines a hardcoded operand.
+
+    """
     VALID_OPERANDS = (int, long, SegmentRegister, GeneralPurposeRegister,
-        MemoryAddress)
+        MemoryAddress, Immediate)
 
     # we use a ctypes-like way to implement instructions.
     _opcode_ = None
+    _enc_ = []
 
     def __init__(self, operand1=None, operand2=None, operand3=None):
         """Initialize a new Instruction object."""
@@ -349,9 +368,12 @@ class Instruction:
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
         assert operand3 is None or isinstance(operand3, self.VALID_OPERANDS)
 
-        self.operand1 = operand1
-        self.operand2 = operand2
-        self.operand3 = operand3
+        # convert int and long's to Immediate values.
+        f = lambda x: x if not isinstance(x, (int, long)) else Immediate(x)
+
+        self.op1 = f(operand1)
+        self.op2 = f(operand2)
+        self.op3 = f(operand3)
 
     def modrm(self, op1, op2):
         """Encode two operands into their modrm representation."""
@@ -464,17 +486,98 @@ class Instruction:
         # append the buf, if it contains anything.
         return ret + buf
 
+    def encoding(self):
+        """Returns the Encoding used, as defined by `_enc_'.
+
+        If the instruction doesn't take any operands, None is returned.
+        If the instruction takes one or more (maximum of three) operands and a
+        match is found in `_enc_', the match is returned, otherwise an
+        Exception is raised.
+
+        """
+        if self.op1 is None:
+            return None
+
+        for enc in self._enc_:
+            opcode, op1, op2, op3 = enc + (None,) * (4 - len(enc))
+
+            # make two tuples of operands, so we can do a for-loop on them.
+            ops = (self.op1, self.op2, self.op3)
+            encs = (op1, op2, op3)
+
+            found = True
+
+            for i in xrange(3):
+                # if the encoding is not a tuple, then it's a hardcoded value.
+                if not isinstance(encs[i], tuple):
+                    if encs[i].__class__ != ops[i].__class__ or \
+                            encs[i] != ops[i]:
+                        found = False
+                        break
+                # check if the operand type (and size) match
+                else:
+                    size, typ = encs[i]
+                    if typ != ops[i].__class__:
+                        found = False
+                        break
+
+            # we found a matching encoding, return it.
+            if found:
+                return (opcode, op1, op2, op3)
+
+        raise Exception('Unknown or Invalid Encoding')
+
     def __str__(self):
         """Representation of this Instruction."""
-        return self.__class__.__name__
-
-    def __len__(self):
-        """Return the length of this Instruction."""
-        return 1
+        s = self.__class__.__name__
+        ops = filter(lambda x: x is not None, (self.op1, self.op2, self.op3))
+        if len(ops):
+            return s + ' ' + ', '.join(map(str, ops))
+        return s
 
     def encode(self):
-        """Encode this Instruction into it's machine code representation."""
-        return chr(self._opcode_)
+        """Encode this Instruction into its machine code representation."""
+        enc = self.encoding()
+        if enc is None:
+            op = self._opcode_
+            return chr(op) if isinstance(op, int) else op
+
+        opcode, op1, op2, op3 = enc
+        ops = (self.op1, self.op2, self.op3)
+        modrm_reg = modrm_rm = None
+
+        ret = chr(opcode) if isinstance(opcode, int) else opcode
+        disp = ''
+
+        for i in xrange(3):
+            op = enc[i+1]
+            # we don't have to process empty operands or hardcoded values
+            if op is None or not isinstance(op, tuple):
+                continue
+
+            size, typ = op
+
+            # handle Immediates
+            if typ == imm:
+                disp += size.pack(ops[i])
+                continue
+
+            # handle the reg part of the modrm byte
+            if typ == gpr:
+                modrm_reg = ops[i]
+                continue
+
+            # handle the rm part of the modrm byte
+            if typ == mem:
+                modrm_rm = ops[i]
+                continue
+
+            raise Exception('Unknown Type')
+
+        if modrm_reg or modrm_rm:
+            ret += self.modrm(modrm_reg, modrm_rm)
+
+        return ret + disp
 
 class retn(Instruction):
     _opcode_ = 0xc3
