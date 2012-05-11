@@ -48,6 +48,8 @@ class CheckSyntax(unittest.TestCase):
         eq(m(eax, dword[eax-0x81]), '\x80\x7f\xff\xff\xff')
         eq(m(eax, dword[eax-2]), '\x40\xfe')
         eq(m(eax, dword[eax+0x40]), '\x40\x40')
+        eq(m(eax, ebx), '\xc3')
+        eq(m(esi, edi), '\xf7')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

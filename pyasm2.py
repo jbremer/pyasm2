@@ -410,25 +410,25 @@ class Instruction:
                     S = mults[op2.mult]
                     mod = 2
 
-        # if `mod' is two here, then there can be either a 8bit, 32bit or no
-        # displacement at all. when `mod' is three, there has to be either a
-        # 8bit displacement or a 32bit one.
-        if mod in (2, 3):
-            if op2.disp is None:
-                if mod == 3:
+            # if `mod' is two here, then there can be either a 8bit, 32bit or
+            # no displacement at all. when `mod' is three, there has to be
+            # either a 8bit displacement or a 32bit one.
+            if mod in (2, 3):
+                if op2.disp is None:
+                    if mod == 3:
+                        mod = 1
+                        buf = '\x00'
+                    else:
+                        mod = 0
+                elif op2.disp >= 0 and op2.disp < 0x80:
                     mod = 1
-                    buf = '\x00'
+                    buf = chr(op2.disp)
+                elif op2.disp >= 0xffffff80 and op2.disp < 2**32:
+                    mod = 1
+                    buf = chr(op2.disp & 0xff)
                 else:
-                    mod = 0
-            elif op2.disp >= 0 and op2.disp < 0x80:
-                mod = 1
-                buf = chr(op2.disp)
-            elif op2.disp >= 0xffffff80 and op2.disp < 2**32:
-                mod = 1
-                buf = chr(op2.disp & 0xff)
-            else:
-                mod = 2
-                buf = struct.pack('I', op2.disp)
+                    mod = 2
+                    buf = struct.pack('I', op2.disp)
 
         # construct the modrm byte
         ret = chr((mod << 6) + (reg << 3) + rm)
