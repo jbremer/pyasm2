@@ -50,6 +50,14 @@ class CheckSyntax(unittest.TestCase):
         eq(m(eax, ebx), '\xc3')
         eq(m(esi, edi), '\xf7')
 
+    def test_pack(self):
+        eq = self.assertEqual
+
+        eq(byte.pack(1), '\x01')
+        eq(word.pack(1), '\x01\x00')
+        eq(dword.pack(1), '\x01\x00\x00\x00')
+        eq(qword.pack(1), '\x01\x00\x00\x00\x00\x00\x00\x00')
+
     def test_instructions(self):
         eq = lambda i, s, b: (self.assertEqual(str(i), s,
             'Invalid string representation for: ' + str(i)),

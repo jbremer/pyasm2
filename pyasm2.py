@@ -264,6 +264,13 @@ class MemoryAddress:
             self.reg1 == other.reg1 and self.reg2 == other.reg2 and \
             self.mult == other.mult and self.disp == other.disp else -1
 
+    def pack(self, value):
+        """Pack a value depending on the `size' of this Memory Address."""
+        assert self.size is not None
+
+        fmt = {8: 'B', 16: 'H', 32: 'I', 64: 'Q'}
+        return struct.pack(fmt[self.size], value)
+
 # define the size for the memory addresses
 byte = MemoryAddress(size=8)
 word = MemoryAddress(size=16)
