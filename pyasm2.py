@@ -246,6 +246,10 @@ class GeneralPurposeRegister:
         """other + self"""
         return self.__add__(other)
 
+    def __sub__(self, other):
+        """self - other"""
+        return self.__add__(2**32 - other)
+
     def __mul__(self, other):
         """self * other"""
         return MemoryAddress(reg2=self, mult=other)

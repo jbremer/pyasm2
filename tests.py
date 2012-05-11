@@ -22,6 +22,7 @@ class CheckSyntax(unittest.TestCase):
         self.assertEqual(str(dword[cs:eax+ebx]), 'dword [cs:eax+ebx]')
         self.assertEqual(dword[cs:0x13371337], dword[cs:0x13371337])
         self.assertEqual(str(dword[cs:0xdeadf00d]), 'dword [cs:0xdeadf00d]')
+        self.assertEqual(dword[eax-0x1000], dword[eax+0xfffff000])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
