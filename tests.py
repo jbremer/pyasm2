@@ -28,9 +28,8 @@ class CheckSyntax(unittest.TestCase):
         eq(dword[eax-0x1000], dword[eax+0xfffff000])
 
     def test_modrm(self):
-        i = Instruction()
         eq = self.assertEqual
-        m = i.modrm
+        m = Instruction().modrm
 
         eq(m(eax, dword[eax]), '\x00')
         eq(m(ecx, dword[ebx]), m(dword[ebx], ecx))
@@ -50,6 +49,14 @@ class CheckSyntax(unittest.TestCase):
         eq(m(eax, dword[eax+0x40]), '\x40\x40')
         eq(m(eax, ebx), '\xc3')
         eq(m(esi, edi), '\xf7')
+
+    def test_instructions(self):
+        eq = lambda i, s, b: (self.assertEqual(str(i), s,
+            'Invalid string representation for: ' + str(i)),
+            self.assertEqual(i.encode(), b, 'Invalid encoding for: ' + str(i)))
+
+        eq(retn(), 'retn', '\xc3')
+        eq(nop(), 'nop', '\x90')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

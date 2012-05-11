@@ -317,6 +317,9 @@ class Instruction:
     VALID_OPERANDS = (int, long, SegmentRegister, GeneralPurposeRegister,
         MemoryAddress)
 
+    # we use a ctypes-like way to implement instructions.
+    _opcode_ = None
+
     def __init__(self, operand1=None, operand2=None, operand3=None):
         """Initialize a new Instruction object."""
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
@@ -437,3 +440,21 @@ class Instruction:
             ret += chr((S << 6) + (index << 3) + base)
         # append the buf, if it contains anything.
         return ret + buf
+
+    def __str__(self):
+        """Representation of this Instruction."""
+        return self.__class__.__name__
+
+    def __len__(self):
+        """Return the length of this Instruction."""
+        return 1
+
+    def encode(self):
+        """Encode this Instruction into it's machine code representation."""
+        return chr(self._opcode_)
+
+class retn(Instruction):
+    _opcode_ = 0xc3
+
+class nop(Instruction):
+    _opcode_ = 0x90
