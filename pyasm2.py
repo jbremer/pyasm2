@@ -66,6 +66,29 @@ class MemoryAddress:
         self.mult = mult
         self.disp = disp
 
+        self.clean()
+
+    def clean(self):
+        """Makes sure that the internal representation of the Memory Address
+            is as easy as possible.
+
+        For example, we don't want `esp' in `reg2' (and `esp' can't have a
+        `mult' other than one.
+
+        Note that we can't use `esp' directly, because it's not initialized
+        the first time(s) we call this function, therefore we use it's index,
+        which is 4.
+
+        """
+        if self.reg2 is not None:
+            assert self.reg2.index != 4 or self.mult == 1
+
+        # swap registers if `reg2' contains `esp'
+        if self.reg2 is not None and self.reg2.index == 4:
+            self.reg1, self.reg2 = self.reg2, self.reg1
+
+        return self
+
     def merge(self, other):
         """Merge self with a Displacement, Register or Memory Address."""
         # it is not possible to merge with one of the predefined Memory
@@ -76,7 +99,7 @@ class MemoryAddress:
             assert other >= 0 and other < 2**32 and self.disp is None
 
             self.disp = other
-            return self
+            return self.clean()
 
         if isinstance(other, GeneralPurposeRegister):
             assert self.reg1 is None or self.reg2 is None
@@ -86,7 +109,7 @@ class MemoryAddress:
             else:
                 self.reg2 = other
 
-            return self
+            return self.clean()
 
         if isinstance(other, MemoryAddress):
             assert self.size is None or other.size is None
@@ -118,7 +141,7 @@ class MemoryAddress:
             if self.disp is None:
                 self.disp = other.disp
 
-            return self
+            return self.clean()
 
         raise Exception('Invalid Parameter')
 
