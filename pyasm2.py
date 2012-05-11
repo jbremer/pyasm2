@@ -17,6 +17,7 @@ compilers etc.
 The syntax of pyasm2 is supposed to be as simple as possible.
 
 """
+import struct
 
 class SegmentRegister:
     """Defines the Segment Registers."""
@@ -310,3 +311,141 @@ edi = EDI = GeneralPurposeRegister(7, 'edi')
 
 # array of general purpose registers, according to their index
 GeneralPurposeRegister.register = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
+
+class Instruction:
+    """Base class for every instruction."""
+    VALID_OPERANDS = (int, long, SegmentRegister, GeneralPurposeRegister,
+        MemoryAddress)
+
+    def __init__(self, operand1=None, operand2=None, operand3=None):
+        """Initialize a new Instruction object."""
+        assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
+        assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
+        assert operand3 is None or isinstance(operand3, self.VALID_OPERANDS)
+
+        self.operand1 = operand1
+        self.operand2 = operand2
+        self.operand3 = operand3
+
+    def modrm(self, op1, op2):
+        """Encode two operands into their modrm representation."""
+        # we make sure `op2' is always the Memory Address (if present at all)
+        if isinstance(op1, MemoryAddress):
+            op1, op2 = op2, op1
+
+        # a brief explanation of variabele names in this function.
+        # there is a modrm byte, which contains `reg', `mod' and `rm' and
+        # there is a sib byte, which contains `S', `index' and `base'.
+        # for more explanation on the encoding, see also:
+        # http://sandpile.org/x86/opc_rm.htm for the modrm byte, and
+        # http://sandpile.org/x86/opc_rm.htm for the sib byte.
+
+        reg = op1.index
+
+        buf = ''
+        sib = False
+
+        if isinstance(op2, GeneralPurposeRegister):
+            mod = 3
+            rm = op2.index
+
+        elif isinstance(op2, MemoryAddress):
+            mults = {1: 0, 2: 1, 4: 2, 8: 3}
+            if op2.reg1 is None:
+                if op2.reg2 is None:
+                    # there should be atleast a displacement
+                    assert op2.disp is not None
+                    mod = 0
+                    rm = 5
+                    buf = struct.pack('I', op2.disp)
+                else:
+                    sib = True
+                    S = mults[op2.mult]
+                    index = op2.reg2.index
+                    mod = 0
+                    rm = 4
+                    # it's not possible to have a register with a
+                    # multiplication other than one without a 32bit
+                    # displacement.
+                    base = 5
+                    buf = struct.pack('I', op2.disp if op2.disp else 0)
+            else:
+                if op2.reg2 is None:
+                    # special case for `esp', since it requires the sib byte
+                    if op2.reg1.index == 4:
+                        sib = True
+                        base = 4
+                        index = 4
+                        S = 0
+                        rm = 4
+                        if op2.disp is not None:
+                            # TODO add 8bit displacement support
+                            mod = 2
+                            buf = struct.pack('I', op2.disp)
+                        else:
+                            mod = 0
+                    # special case for `ebp', since it requires a displacement
+                    elif op2.reg1.index == 5:
+                        rm = 5
+                        if op2.disp is not None:
+                            # TODO add 8bit displacement support
+                            mod = 2
+                            buf = struct.pack('I', op2.disp)
+                        else:
+                            mod = 1
+                            buf = '\x00'
+                    else:
+                        rm = op2.reg1.index
+                        if op2.disp is not None:
+                            # TODO add 8bit displacement support
+                            mod = 2
+                            buf = struct.pack('I', op2.disp)
+                        else:
+                            mod = 0
+                # special case for `esp', since it requires the sib byte
+                elif op2.reg1.index == 4:
+                    sib = True
+                    base = 4
+                    index = op2.reg2.index
+                    S = mults[op2.mult]
+                    rm = 4
+                    if op2.disp is not None:
+                        # TODO add 8bit displacement support
+                        mod = 2
+                        buf = struct.pack('I', op2.disp)
+                    else:
+                        mod = 0
+                # special case for `ebp', since it requires a displacement
+                elif op2.reg1.index == 5:
+                    sib = True
+                    index = op2.reg2.index
+                    S = mults[op2.mult]
+                    base = 5
+                    rm = 4
+                    if op2.disp is not None:
+                        # TODO add 8bit displacement support
+                        mod = 2
+                        buf = struct.pack('I', op2.disp)
+                    else:
+                        mod = 1
+                        buf = '\x00'
+                else:
+                    sib = True
+                    rm = 4
+                    base = op2.reg1.index
+                    index = op2.reg2.index
+                    S = mults[op2.mult]
+                    if op2.disp is not None:
+                        # TODO add 8bit displacement support
+                        mod = 2
+                        buf = struct.pack('I', op2.disp)
+                    else:
+                        mod = 0
+
+        # construct the modrm byte
+        ret = chr((mod << 6) + (reg << 3) + rm)
+        if sib:
+            # if required, construct the sib byte
+            ret += chr((S << 6) + (index << 3) + base)
+        # append the buf, if it contains anything.
+        return ret + buf
