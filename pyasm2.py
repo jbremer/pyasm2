@@ -587,6 +587,23 @@ class Instruction:
 
 class retn(Instruction):
     _opcode_ = 0xc3
+    _enc_ = [
+        (0xc2, (word, imm))
+    ]
 
 class nop(Instruction):
     _opcode_ = 0x90
+
+class mov(Instruction):
+    _enc_ = [
+        (0xb8, eax, (dword, imm)),
+        (0xb9, ecx, (dword, imm)),
+        (0xba, edx, (dword, imm)),
+        (0xbb, ebx, (dword, imm)),
+        (0xbc, esp, (dword, imm)),
+        (0xbd, ebp, (dword, imm)),
+        (0xbe, esi, (dword, imm)),
+        (0xbf, edi, (dword, imm)),
+        (0x8b, (dword, gpr), (dword, mem)),
+        (0x89, (dword, mem), (dword, gpr)),
+    ]

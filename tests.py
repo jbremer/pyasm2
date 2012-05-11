@@ -61,10 +61,19 @@ class CheckSyntax(unittest.TestCase):
     def test_instructions(self):
         eq = lambda i, s, b: (self.assertEqual(str(i), s,
             'Invalid string representation for: ' + str(i)),
-            self.assertEqual(i.encode(), b, 'Invalid encoding for: ' + str(i)))
+            self.assertEqual(i.encode(), b, 'Invalid encoding for: ' +
+                str(i) + ' -> ' + repr(i.encode())))
 
         eq(retn(), 'retn', '\xc3')
         eq(nop(), 'nop', '\x90')
+        eq(retn(0x80), 'retn 0x80', '\xc2\x80\x00')
+
+        eq(mov(eax, 0xdeadf00d), 'mov eax, 0xdeadf00d', '\xb8\x0d\xf0\xad\xde')
+        eq(mov(esi, 0x11223344), 'mov esi, 0x11223344', '\xbe\x44\x33\x22\x11')
+        eq(mov(edi, dword [esp+ebx*4+0x0c]), 'mov edi, dword [esp+ebx*4+0xc]',
+            '\x8b\x7c\x9c\x0c')
+        eq(mov(dword[ebp+0x30], ecx), 'mov dword [ebp+0x30], ecx',
+            '\x89\x4d\x30')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
