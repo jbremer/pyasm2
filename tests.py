@@ -77,6 +77,8 @@ class CheckSyntax(unittest.TestCase):
 
         eq(pshufd(xmm4, oword[edx], 0x11), 'pshufd xmm4, oword [edx], 0x11',
             '\x66\x0f\x70\x22\x11')
+        eq(pshufd(xmm2, xmm0, 0x40), 'pshufd xmm2, xmm0, 0x40',
+            '\x66\x0f\x70\xd0\x40')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

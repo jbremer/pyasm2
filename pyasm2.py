@@ -373,6 +373,14 @@ xmm7 = XMM7 = XmmRegister(7, 'xmm7')
 # Instruction's
 xmm = XmmRegister
 
+class MemoryRegister:
+    """A combination of MemoryAddress, GeneralPurposeRegister and XmmRegister,
+        useful for modrm encoding etc."""
+    pass
+
+# a combination of operand types that can be used in modrm bytes.
+memreg = MemoryRegister
+
 class Instruction:
     """Base class for every instruction.
 
@@ -533,32 +541,49 @@ class Instruction:
         if self.op1 is None:
             return None
 
+        # check if an operand matches this type
+        f = lambda x, y: isinstance(x, y) or \
+            isinstance(x, (mem, gpr, xmm)) and y == memreg
+
         for enc in self._enc_:
             opcode, op1, op2, op3 = enc + (None,) * (4 - len(enc))
 
-            # make two tuples of operands, so we can do a for-loop on them.
-            ops = (self.op1, self.op2, self.op3)
-            encs = (op1, op2, op3)
+            # check if the amount of operands match.
+            if len(filter(lambda x: x is not None, (self.op1, self.op2,
+                    self.op3))) != len(filter(lambda x: x is not None, (op1,
+                    op2, op3))):
+                continue
 
-            found = True
+            # if the encoding is not a tuple, then it's a hardcoded value.
+            if not isinstance(op1, tuple):
+                # check if the classes and objects match.
+                if op1.__class__ != self.op1.__class__ or op1 != self.op1:
+                    continue
+            # check the operand (and size) of this match
+            elif not f(self.op1, op1[1]):
+                continue
 
-            for i in xrange(3):
-                # if the encoding is not a tuple, then it's a hardcoded value.
-                if not isinstance(encs[i], tuple):
-                    if encs[i].__class__ != ops[i].__class__ or \
-                            encs[i] != ops[i]:
-                        found = False
-                        break
-                # check if the operand type (and size) match
-                else:
-                    size, typ = encs[i]
-                    if typ != ops[i].__class__:
-                        found = False
-                        break
+            if op2 is None:
+                return (opcode, op1, op2, op3)
+
+            # if the encoding is not a tuple, then it's a hardcoded value.
+            if not isinstance(op2, tuple):
+                # check if the classes and objects match.
+                if op2.__class__ != self.op2.__class__ or op2 != self.op2:
+                    continue
+            # check the operand (and size) of this match
+            elif not f(self.op2, op2[1]):
+                continue
+
+            if op3 is None:
+                return (opcode, op1, op2, op3)
+
+            # check if the third operand matches (can only be an Immediate)
+            if op3[1] != self.op3.__class__:
+                continue
 
             # we found a matching encoding, return it.
-            if found:
-                return (opcode, op1, op2, op3)
+            return (opcode, op1, op2, op3)
 
         raise Exception('Unknown or Invalid Encoding')
 
@@ -584,6 +609,10 @@ class Instruction:
         ret = chr(opcode) if isinstance(opcode, int) else opcode
         disp = ''
 
+        # check if an operand matches this type
+        f = lambda x, y: isinstance(x, y) or \
+            isinstance(x, (mem, gpr, xmm)) and y == memreg
+
         for i in xrange(3):
             op = enc[i+1]
             # we don't have to process empty operands or hardcoded values
@@ -598,12 +627,12 @@ class Instruction:
                 continue
 
             # handle the reg part of the modrm byte
-            if typ == gpr or typ == xmm:
+            if not typ in (mem, memreg) and modrm_reg is None:
                 modrm_reg = ops[i]
                 continue
 
             # handle the rm part of the modrm byte
-            if typ == mem:
+            if typ in (mem, gpr, xmm, memreg):
                 modrm_rm = ops[i]
                 continue
 
@@ -637,5 +666,5 @@ class mov(Instruction):
         (0x89, (dword, mem), (dword, gpr)),
 class pshufd(Instruction):
     _enc_ = [
-        ('\x66\x0f\x70', (oword, xmm), (oword, mem), (byte, imm))
+        ('\x66\x0f\x70', (oword, xmm), (oword, memreg), (byte, imm))
     ]
