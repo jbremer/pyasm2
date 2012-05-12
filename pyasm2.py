@@ -71,10 +71,13 @@ class MemoryAddress:
     def __init__(self, size=None, segment=None, reg1=None, reg2=None,
             mult=None, disp=None):
         """Create a new Memory Address."""
+        # check if a register is valid..
+        f = lambda x: x is None or isinstance(x, (GeneralPurposeRegister,
+            XmmRegister))
         assert size is None or size in (8, 16, 32, 64, 128)
         assert segment is None or isinstance(segment, SegmentRegister)
-        assert reg1 is None or isinstance(reg1, GeneralPurposeRegister)
-        assert reg2 is None or isinstance(reg2, GeneralPurposeRegister)
+        f(reg1)
+        f(reg2)
         assert mult is None or mult in (1, 2, 4, 8)
         assert disp is None or int(disp) >= 0 and int(disp) < 2**32
 
@@ -127,7 +130,7 @@ class MemoryAddress:
 
             return self.clean()
 
-        if isinstance(other, GeneralPurposeRegister):
+        if isinstance(other, (GeneralPurposeRegister, XmmRegister)):
             assert self.reg1 is None or self.reg2 is None
 
             if self.reg1 is None:
@@ -238,7 +241,7 @@ class MemoryAddress:
 
     def __str__(self):
         """Representation of this Memory Address."""
-        sizes = {8: 'byte', 16: 'word', 32: 'dword', 64: 'qword'}
+        sizes = {8: 'byte', 16: 'word', 32: 'dword', 64: 'qword', 128: 'oword'}
         s = ''
         if self.reg1 is not None:
             s += str(self.reg1)
@@ -280,6 +283,7 @@ byte = MemoryAddress(size=8)
 word = MemoryAddress(size=16)
 dword = MemoryAddress(size=32)
 qword = MemoryAddress(size=64)
+oword = MemoryAddress(size=128)
 
 # make an alias `mem' to MemoryAddress in order to simplify the creation of
 # Instruction's
@@ -344,6 +348,31 @@ GeneralPurposeRegister.register = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
 # creation of Instruction's
 gpr = GeneralPurposeRegister
 
+class XmmRegister:
+    """Defines the Xmm Registers, registers used for the SSE instructions."""
+    def __init__(self, index, name):
+        self.index = index
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
+xmm0 = XMM0 = XmmRegister(0, 'xmm0')
+xmm1 = XMM1 = XmmRegister(1, 'xmm1')
+xmm2 = XMM2 = XmmRegister(2, 'xmm2')
+xmm3 = XMM3 = XmmRegister(3, 'xmm3')
+xmm4 = XMM4 = XmmRegister(4, 'xmm4')
+xmm5 = XMM5 = XmmRegister(5, 'xmm5')
+xmm6 = XMM6 = XmmRegister(6, 'xmm6')
+xmm7 = XMM7 = XmmRegister(7, 'xmm7')
+
+# make an alias `xmm' to XmmRegister in order to simplify the creation of
+# Instruction's
+xmm = XmmRegister
+
 class Instruction:
     """Base class for every instruction.
 
@@ -362,7 +391,7 @@ class Instruction:
 
     """
     VALID_OPERANDS = (int, long, SegmentRegister, GeneralPurposeRegister,
-        MemoryAddress, Immediate)
+        MemoryAddress, Immediate, XmmRegister)
 
     # we use a ctypes-like way to implement instructions.
     _opcode_ = None
@@ -399,7 +428,7 @@ class Instruction:
         buf = ''
         sib = False
 
-        if isinstance(op2, GeneralPurposeRegister):
+        if isinstance(op2, (GeneralPurposeRegister, XmmRegister)):
             mod = 3
             rm = op2.index
 
@@ -569,7 +598,7 @@ class Instruction:
                 continue
 
             # handle the reg part of the modrm byte
-            if typ == gpr:
+            if typ == gpr or typ == xmm:
                 modrm_reg = ops[i]
                 continue
 
@@ -606,4 +635,7 @@ class mov(Instruction):
         (0xbf, edi, (dword, imm)),
         (0x8b, (dword, gpr), (dword, mem)),
         (0x89, (dword, mem), (dword, gpr)),
+class pshufd(Instruction):
+    _enc_ = [
+        ('\x66\x0f\x70', (oword, xmm), (oword, mem), (byte, imm))
     ]
