@@ -92,6 +92,7 @@ class CheckSyntax(unittest.TestCase):
 
         ra(Exception, lambda: paddd(xmm0, eax))
         ra(Exception, lambda: mov(eax, xmm1))
+        ra(Exception, lambda: mov(eax, byte[ebx]))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

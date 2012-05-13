@@ -290,9 +290,10 @@ mem = MemoryAddress
 
 class GeneralPurposeRegister:
     """Defines the General Purpose Registers."""
-    def __init__(self, index, name):
+    def __init__(self, index, name, size):
         self.index = index
         self.name = name
+        self.size = size.size
 
     def __add__(self, other):
         """self + other"""
@@ -331,14 +332,14 @@ class GeneralPurposeRegister:
         return MemoryAddress(reg1=self).__index__()
 
 # define the general purpose registers
-eax = EAX = GeneralPurposeRegister(0, 'eax')
-ecx = ECX = GeneralPurposeRegister(1, 'ecx')
-edx = EDX = GeneralPurposeRegister(2, 'edx')
-ebx = EBX = GeneralPurposeRegister(3, 'ebx')
-esp = ESP = GeneralPurposeRegister(4, 'esp')
-ebp = EBP = GeneralPurposeRegister(5, 'ebp')
-esi = ESI = GeneralPurposeRegister(6, 'esi')
-edi = EDI = GeneralPurposeRegister(7, 'edi')
+eax = EAX = GeneralPurposeRegister(0, 'eax', dword)
+ecx = ECX = GeneralPurposeRegister(1, 'ecx', dword)
+edx = EDX = GeneralPurposeRegister(2, 'edx', dword)
+ebx = EBX = GeneralPurposeRegister(3, 'ebx', dword)
+esp = ESP = GeneralPurposeRegister(4, 'esp', dword)
+ebp = EBP = GeneralPurposeRegister(5, 'ebp', dword)
+esi = ESI = GeneralPurposeRegister(6, 'esi', dword)
+edi = EDI = GeneralPurposeRegister(7, 'edi', dword)
 
 # array of general purpose registers, according to their index
 GeneralPurposeRegister.register = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
@@ -352,6 +353,7 @@ class XmmRegister:
     def __init__(self, index, name):
         self.index = index
         self.name = name
+        self.size = oword.size
 
     def __str__(self):
         return self.name
@@ -566,7 +568,8 @@ class Instruction:
                 if op1.__class__ != self.op1.__class__ or op1 != self.op1:
                     continue
             # check the operand (and size) of this match
-            elif not issubclass(op1[1], self.op1.__class__):
+            elif not issubclass(op1[1], self.op1.__class__) or \
+                    hasattr(self.op1, 'size') and op1[0].size != self.op1.size:
                 continue
 
             if op2 is None:
@@ -578,7 +581,8 @@ class Instruction:
                 if op2.__class__ != self.op2.__class__ or op2 != self.op2:
                     continue
             # check the operand (and size) of this match
-            elif not issubclass(op2[1], self.op2.__class__):
+            elif not issubclass(op2[1], self.op2.__class__) or \
+                    hasattr(self.op2, 'size') and op2[0].size != self.op2.size:
                 continue
 
             if op3 is None:
@@ -656,7 +660,7 @@ class nop(Instruction):
 
 class mov(Instruction):
     # mov r32, imm32
-    _enc_ = zip(range(0xb8, 0xbf), gpr.register, ((dword, imm),) * 8) + [
+    _enc_ = zip(range(0xb8, 0xc0), gpr.register, ((dword, imm),) * 8) + [
         (0x8b, (dword, gpr), (dword, mem)),
         (0x89, (dword, mem), (dword, gpr)),
         (0x88, (byte, mem), (byte, gpr)),
