@@ -63,6 +63,7 @@ class CheckSyntax(unittest.TestCase):
             'Invalid string representation for: ' + str(i)),
             self.assertEqual(i.encode(), b, 'Invalid encoding for: ' +
                 str(i) + ' -> ' + repr(i.encode())))
+        ra = self.assertRaises
 
         eq(retn(), 'retn', '\xc3')
         eq(nop(), 'nop', '\x90')
@@ -79,6 +80,11 @@ class CheckSyntax(unittest.TestCase):
             '\x66\x0f\x70\x22\x11')
         eq(pshufd(xmm2, xmm0, 0x40), 'pshufd xmm2, xmm0, 0x40',
             '\x66\x0f\x70\xd0\x40')
+
+        eq(paddd(xmm2, xmm5), 'paddd xmm2, xmm5', '\x66\x0f\xfe\xd5')
+
+        ra(Exception, lambda: paddd(xmm0, eax))
+        ra(Exception, lambda: mov(eax, xmm1))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

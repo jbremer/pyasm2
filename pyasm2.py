@@ -121,7 +121,7 @@ class MemoryAddress:
         """Merge self with a Displacement, Register or Memory Address."""
         # it is not possible to merge with one of the predefined Memory
         # Addresses
-        assert id(self) not in map(id, (byte, word, dword, qword))
+        assert id(self) not in map(id, (byte, word, dword, qword, oword))
 
         if isinstance(other, (int, long, Immediate)):
             assert int(other) >= 0 and int(other) < 2**32 and self.disp is None
@@ -373,13 +373,19 @@ xmm7 = XMM7 = XmmRegister(7, 'xmm7')
 # Instruction's
 xmm = XmmRegister
 
-class MemoryRegister:
-    """A combination of MemoryAddress, GeneralPurposeRegister and XmmRegister,
+class MemoryGeneralPurposeRegister(MemoryAddress, GeneralPurposeRegister):
+    """A combination of MemoryAddress and GeneralPurposeRegister,
         useful for modrm encoding etc."""
     pass
 
 # a combination of operand types that can be used in modrm bytes.
-memreg = MemoryRegister
+memgpr = MemoryGeneralPurposeRegister
+
+class MemoryXmmRegister(MemoryAddress, XmmRegister):
+    """Combination of MemoryAddress and XmmRegister."""
+    pass
+
+memxmm = MemoryXmmRegister
 
 class Instruction:
     """Base class for every instruction.
@@ -405,7 +411,8 @@ class Instruction:
     _opcode_ = None
     _enc_ = []
 
-    def __init__(self, operand1=None, operand2=None, operand3=None):
+    def __init__(self, operand1=None, operand2=None, operand3=None,
+            disable_valid_instr_check=False):
         """Initialize a new Instruction object."""
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
@@ -417,6 +424,10 @@ class Instruction:
         self.op1 = f(operand1)
         self.op2 = f(operand2)
         self.op3 = f(operand3)
+
+        # check if this combination of operands is valid
+        if not disable_valid_instr_check:
+            self.encoding()
 
     def modrm(self, op1, op2):
         """Encode two operands into their modrm representation."""
@@ -541,10 +552,6 @@ class Instruction:
         if self.op1 is None:
             return None
 
-        # check if an operand matches this type
-        f = lambda x, y: isinstance(x, y) or \
-            isinstance(x, (mem, gpr, xmm)) and y == memreg
-
         for enc in self._enc_:
             opcode, op1, op2, op3 = enc + (None,) * (4 - len(enc))
 
@@ -560,7 +567,7 @@ class Instruction:
                 if op1.__class__ != self.op1.__class__ or op1 != self.op1:
                     continue
             # check the operand (and size) of this match
-            elif not f(self.op1, op1[1]):
+            elif not issubclass(op1[1], self.op1.__class__):
                 continue
 
             if op2 is None:
@@ -572,7 +579,7 @@ class Instruction:
                 if op2.__class__ != self.op2.__class__ or op2 != self.op2:
                     continue
             # check the operand (and size) of this match
-            elif not f(self.op2, op2[1]):
+            elif not issubclass(op2[1], self.op2.__class__):
                 continue
 
             if op3 is None:
@@ -609,10 +616,6 @@ class Instruction:
         ret = chr(opcode) if isinstance(opcode, int) else opcode
         disp = ''
 
-        # check if an operand matches this type
-        f = lambda x, y: isinstance(x, y) or \
-            isinstance(x, (mem, gpr, xmm)) and y == memreg
-
         for i in xrange(3):
             op = enc[i+1]
             # we don't have to process empty operands or hardcoded values
@@ -627,12 +630,12 @@ class Instruction:
                 continue
 
             # handle the reg part of the modrm byte
-            if not typ in (mem, memreg) and modrm_reg is None:
+            if not typ in (mem, memgpr, memxmm) and modrm_reg is None:
                 modrm_reg = ops[i]
                 continue
 
             # handle the rm part of the modrm byte
-            if typ in (mem, gpr, xmm, memreg):
+            if typ in (mem, gpr, xmm, memgpr, memxmm):
                 modrm_rm = ops[i]
                 continue
 
@@ -668,3 +671,15 @@ class pshufd(Instruction):
     _enc_ = [
         ('\x66\x0f\x70', (oword, xmm), (oword, memreg), (byte, imm))
     ]
+
+class pshufd(Instruction):
+    _enc_ = [('\x66\x0f\x70', (oword, xmm), (oword, memxmm), (byte, imm))]
+
+class paddd(Instruction):
+    _enc_ = [('\x66\x0f\xfe', (oword, xmm), (oword, memxmm))]
+
+class psubd(Instruction):
+    _enc_ = [('\x66\x0f\xfa', (oword, xmm), (oword, memxmm))]
+
+class pand(Instruction):
+    _enc_ = [('\x66\x0f\xdb', (oword, xmm), (oword, memxmm))]
