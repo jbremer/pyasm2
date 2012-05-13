@@ -412,7 +412,8 @@ class Instruction:
     _opcode_ = None
     _enc_ = []
 
-    def __init__(self, operand1=None, operand2=None, operand3=None):
+    def __init__(self, operand1=None, operand2=None, operand3=None,
+            lock=False, rep=False, repne=False):
         """Initialize a new Instruction object."""
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
@@ -424,6 +425,9 @@ class Instruction:
         self.op1 = f(operand1)
         self.op2 = f(operand2)
         self.op3 = f(operand3)
+        self.lock = lock
+        self.rep = rep
+        self.repne = repne
 
         # find the correct encoding for this combination of operands
         self.encoding()
@@ -603,7 +607,18 @@ class Instruction:
 
     def __str__(self):
         """Representation of this Instruction."""
-        s = self.__class__.__name__
+        s = ''
+
+        if self.lock:
+            s += 'lock '
+
+        if self.repne:
+            s += 'repne '
+
+        if self.rep:
+            s += 'rep '
+
+        s += self.__class__.__name__
         ops = filter(lambda x: x is not None, (self.op1, self.op2, self.op3))
         if len(ops):
             return s + ' ' + ', '.join(map(str, ops))
@@ -612,15 +627,28 @@ class Instruction:
     def encode(self):
         """Encode this Instruction into its machine code representation."""
         enc = self.encoding()
+
+        ret = ''
+
+        if self.lock:
+            ret += '\xf0'
+
+        if self.repne:
+            ret += '\xf2'
+
+        if self.rep:
+            ret += '\xf3'
+
         if enc is None:
             op = self._opcode_
-            return chr(op) if isinstance(op, int) else op
+            ret += chr(op) if isinstance(op, int) else op
+            return ret
 
         opcode, op1, op2, op3 = enc
         ops = (self.op1, self.op2, self.op3)
         modrm_reg = modrm_rm = None
 
-        ret = chr(opcode) if isinstance(opcode, int) else opcode
+        ret += chr(opcode) if isinstance(opcode, int) else opcode
         disp = ''
 
         for i in xrange(3):
@@ -690,6 +718,24 @@ class dec(Instruction):
 class xchg(Instruction):
     # xchg eax, r32
     _enc_ = zip(range(0x91, 0x98), gpr.register[1:], (eax,) * 8)
+
+class stosb(Instruction):
+    _opcode_ = 0xaa
+
+class stosd(Instruction):
+    _opcode_ = 0xab
+
+class lodsb(Instruction):
+    _opcode_ = 0xac
+
+class lodsd(Instruction):
+    _opcode_ = 0xad
+
+class scasb(Instruction):
+    _opcode_ = 0xae
+
+class scasd(Instruction):
+    _opcode_ = 0xaf
 
 class pshufd(Instruction):
     _enc_ = [('\x66\x0f\x70', (oword, xmm), (oword, memxmm), (byte, imm))]

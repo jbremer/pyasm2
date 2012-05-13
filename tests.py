@@ -94,5 +94,9 @@ class CheckSyntax(unittest.TestCase):
         ra(Exception, lambda: mov(eax, xmm1))
         ra(Exception, lambda: mov(eax, byte[ebx]))
 
+        eq(inc(ecx, lock=True), 'lock inc ecx', '\xf0\x41')
+        eq(stosd(rep=True), 'rep stosd', '\xf3\xab')
+        eq(scasb(repne=True), 'repne scasb', '\xf2\xae')
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
