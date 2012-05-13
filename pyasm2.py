@@ -783,11 +783,59 @@ class lea(Instruction):
 class pshufd(Instruction):
     _enc_ = [('\x66\x0f\x70', (oword, xmm), (oword, memxmm), (byte, imm))]
 
+class paddb(Instruction):
+    _enc_ = [('\x66\x0f\xfc', (oword, xmm), (oword, memxmm))]
+
+class paddw(Instruction):
+    _enc_ = [('\x66\x0f\xfd', (oword, xmm), (oword, memxmm))]
+
 class paddd(Instruction):
     _enc_ = [('\x66\x0f\xfe', (oword, xmm), (oword, memxmm))]
+
+class psubb(Instruction):
+    _enc_ = [('\x66\x0f\xf8', (oword, xmm), (oword, memxmm))]
+
+class psubw(Instruction):
+    _enc_ = [('\x66\x0f\xf9', (oword, xmm), (oword, memxmm))]
 
 class psubd(Instruction):
     _enc_ = [('\x66\x0f\xfa', (oword, xmm), (oword, memxmm))]
 
 class pand(Instruction):
     _enc_ = [('\x66\x0f\xdb', (oword, xmm), (oword, memxmm))]
+
+class pandn(Instruction):
+    _enc_ = [('\x66\x0f\xdf', (oword, xmm), (oword, memxmm))]
+
+class por(Instruction):
+    _enc_ = [('\x66\x0f\xeb', (oword, xmm), (oword, memxmm))]
+
+class pxor(Instruction):
+    _enc_ = [('\x66\x0f\xef', (oword, xmm), (oword, memxmm))]
+
+class pmuludq(Instruction):
+    _enc_ = [('\x66\x0f\xf4', (oword, xmm), (oword, memxmm))]
+
+class movaps(Instruction):
+    _enc_ = [
+        ('\x0f\x28', (oword, xmm), (oword, memxmm)),
+        ('\x0f\x29', (oword, memxmm), (oword, xmm)),
+    ]
+
+class movapd(Instruction):
+    _enc_ = [
+        ('\x66\x0f\x28', (oword, xmm), (oword, memxmm)),
+        ('\x66\x0f\x29', (oword, memxmm), (oword, xmm)),
+    ]
+
+class movd(Instruction):
+    _enc_ = [
+        ('\x66\x0f\x6e', (oword, xmm), (dword, memgpr)),
+        ('\x66\x0f\x7e', (dword, memgpr), (oword, xmm)),
+    ]
+
+class movss(Instruction):
+    _enc_ = [
+        ('\xf3\x0f\x10', (oword, xmm), (oword, memxmm)),
+        ('\xf3\x0f\x11', (oword, memxmm), (oword, xmm)),
+    ]

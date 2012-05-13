@@ -101,6 +101,13 @@ class CheckSyntax(unittest.TestCase):
         eq(lea(eax, [esp+eax*2+0x42]), 'lea eax, [esp+eax*2+0x42]',
             '\x8d\x44\x44\x42')
 
+        eq(movss(xmm6, xmm3), 'movss xmm6, xmm3', '\xf3\x0f\x10\xf3')
+        eq(movd(xmm7, edi), 'movd xmm7, edi', '\x66\x0f\x6e\xff')
+        eq(pand(xmm4, oword [ecx]), 'pand xmm4, oword [ecx]',
+            '\x66\x0f\xdb\x21')
+        eq(movapd(xmm6, oword [ebx]), 'movapd xmm6, oword [ebx]',
+            '\x66\x0f\x28\x33')
+
     def test_block(self):
         eq = self.assertEqual
 
