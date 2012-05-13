@@ -101,5 +101,11 @@ class CheckSyntax(unittest.TestCase):
         eq(lea(eax, [esp+eax*2+0x42]), 'lea eax, [esp+eax*2+0x42]',
             '\x8d\x44\x44\x42')
 
+    def test_block(self):
+        eq = self.assertEqual
+
+        eq(len(block(mov(eax, 1), mov(ebx, 1))), 10)
+        eq(str(block(mov(eax, 1), mov(ebx, 1))), 'mov eax, 0x1\nmov ebx, 0x1')
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

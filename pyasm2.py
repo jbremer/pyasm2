@@ -697,6 +697,20 @@ class Instruction:
         self._encode = ret + disp
         return self._encode
 
+class Block:
+    def __init__(self, *args):
+        self.instructions = args
+
+    def __len__(self):
+        """Return the length of all instructions chained."""
+        return sum(map(len, self.instructions))
+
+    def __str__(self):
+        """Return a string representation of all instructions chained."""
+        return '\n'.join(map(str, self.instructions))
+
+block = Block
+
 class retn(Instruction):
     _opcode_ = 0xc3
     _enc_ = [
