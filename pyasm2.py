@@ -256,7 +256,7 @@ class MemoryAddress:
                 return '%s [%s:%s]' % (sizes[self.size], str(self.segment), s)
             else:
                 return '%s [%s]' % (sizes[self.size], s)
-        return s if self.segment is None else \
+        return '[%s]' % s if self.segment is None else \
             '[%s:%s]' % (str(self.segment), s)
 
     def __repr__(self):
@@ -406,7 +406,7 @@ class Instruction:
 
     """
     VALID_OPERANDS = (int, long, SegmentRegister, GeneralPurposeRegister,
-        MemoryAddress, Immediate, XmmRegister)
+        MemoryAddress, Immediate, XmmRegister, list)
 
     # we use a ctypes-like way to implement instructions.
     _opcode_ = None
@@ -418,12 +418,16 @@ class Instruction:
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
         assert operand3 is None or isinstance(operand3, self.VALID_OPERANDS)
+        assert not isinstance(operand1, list) or len(operand1) == 1
+        assert not isinstance(operand2, list) or len(operand2) == 1
 
         # convert int and long's to Immediate values.
         f = lambda x: x if not isinstance(x, (int, long)) else Immediate(x)
+        # convert lists with one entry to Memory Addresses
+        g = lambda x: x if not isinstance(x, list) else x[0]
 
-        self.op1 = f(operand1)
-        self.op2 = f(operand2)
+        self.op1 = g(f(operand1))
+        self.op2 = g(f(operand2))
         self.op3 = f(operand3)
         self.lock = lock
         self.rep = rep
@@ -574,7 +578,8 @@ class Instruction:
                     continue
             # check the operand (and size) of this match
             elif not issubclass(op1[1], self.op1.__class__) or \
-                    hasattr(self.op1, 'size') and op1[0].size != self.op1.size:
+                    hasattr(self.op1, 'size') and op1[0] is not None and \
+                    op1[0].size != self.op1.size:
                 continue
 
             if op2 is None:
@@ -588,7 +593,8 @@ class Instruction:
                     continue
             # check the operand (and size) of this match
             elif not issubclass(op2[1], self.op2.__class__) or \
-                    hasattr(self.op2, 'size') and op2[0].size != self.op2.size:
+                    hasattr(self.op2, 'size') and op2[0] is not None and \
+                    op2[0].size != self.op2.size:
                 continue
 
             if op3 is None:
@@ -736,6 +742,9 @@ class scasb(Instruction):
 
 class scasd(Instruction):
     _opcode_ = 0xaf
+
+class lea(Instruction):
+    _enc_ = [(0x8d, (dword, gpr), (None, mem))]
 
 class pshufd(Instruction):
     _enc_ = [('\x66\x0f\x70', (oword, xmm), (oword, memxmm), (byte, imm))]
