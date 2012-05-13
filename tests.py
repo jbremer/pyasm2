@@ -106,6 +106,15 @@ class CheckSyntax(unittest.TestCase):
 
         eq(len(block(mov(eax, 1), mov(ebx, 1))), 10)
         eq(str(block(mov(eax, 1), mov(ebx, 1))), 'mov eax, 0x1\nmov ebx, 0x1')
+        b = block(mov(eax, ebx))
+        b += mov(ecx, edx)
+        eq((len(b), str(b)), (4, 'mov eax, ebx\nmov ecx, edx'))
+
+        c = block(mov(esi, dword[eax]), scasb(rep=True))
+        eq((len(c), str(c)), (4, 'mov esi, dword [eax]\nrep scasb'))
+        b += c
+        eq((len(b), str(b)), (8, 'mov eax, ebx\nmov ecx, edx\n' +
+            'mov esi, dword [eax]\nrep scasb'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

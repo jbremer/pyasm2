@@ -699,7 +699,7 @@ class Instruction:
 
 class Block:
     def __init__(self, *args):
-        self.instructions = args
+        self.instructions = list(args)
 
     def __len__(self):
         """Return the length of all instructions chained."""
@@ -708,6 +708,16 @@ class Block:
     def __str__(self):
         """Return a string representation of all instructions chained."""
         return '\n'.join(map(str, self.instructions))
+
+    def __iadd__(self, other):
+        """self += other"""
+        if isinstance(other, Instruction):
+            self.instructions.append(other)
+        elif isinstance(other, block):
+            self.instructions.extend(other.instructions)
+        else:
+            raise Exception('This object is not welcome here.')
+        return self
 
 block = Block
 
@@ -723,10 +733,10 @@ class nop(Instruction):
 class mov(Instruction):
     # mov r32, imm32
     _enc_ = zip(range(0xb8, 0xc0), gpr.register, ((dword, imm),) * 8) + [
-        (0x8b, (dword, gpr), (dword, mem)),
-        (0x89, (dword, mem), (dword, gpr)),
-        (0x88, (byte, mem), (byte, gpr)),
-        (0x8a, (byte, gpr), (byte, mem)),
+        (0x8b, (dword, gpr), (dword, memgpr)),
+        (0x89, (dword, memgpr), (dword, gpr)),
+        (0x88, (byte, memgpr), (byte, gpr)),
+        (0x8a, (byte, gpr), (byte, memgpr)),
     ]
 
 class push(Instruction):
