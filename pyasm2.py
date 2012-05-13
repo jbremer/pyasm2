@@ -412,8 +412,7 @@ class Instruction:
     _opcode_ = None
     _enc_ = []
 
-    def __init__(self, operand1=None, operand2=None, operand3=None,
-            disable_valid_instr_check=False):
+    def __init__(self, operand1=None, operand2=None, operand3=None):
         """Initialize a new Instruction object."""
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
@@ -426,9 +425,8 @@ class Instruction:
         self.op2 = f(operand2)
         self.op3 = f(operand3)
 
-        # check if this combination of operands is valid
-        if not disable_valid_instr_check:
-            self.encoding()
+        # find the correct encoding for this combination of operands
+        self.encoding()
 
     def modrm(self, op1, op2):
         """Encode two operands into their modrm representation."""
@@ -550,6 +548,9 @@ class Instruction:
         Exception is raised.
 
         """
+        if hasattr(self, '_encoding'):
+            return self._encoding
+
         if self.op1 is None:
             return None
 
@@ -573,7 +574,8 @@ class Instruction:
                 continue
 
             if op2 is None:
-                return (opcode, op1, op2, op3)
+                self._encoding = (opcode, op1, op2, op3)
+                return self._encoding
 
             # if the encoding is not a tuple, then it's a hardcoded value.
             if not isinstance(op2, tuple):
@@ -586,14 +588,16 @@ class Instruction:
                 continue
 
             if op3 is None:
-                return (opcode, op1, op2, op3)
+                self._encoding = (opcode, op1, op2, op3)
+                return self._encoding
 
             # check if the third operand matches (can only be an Immediate)
             if op3[1] != self.op3.__class__:
                 continue
 
             # we found a matching encoding, return it.
-            return (opcode, op1, op2, op3)
+            self._encoding = (opcode, op1, op2, op3)
+            return self._encoding
 
         raise Exception('Unknown or Invalid Encoding')
 
