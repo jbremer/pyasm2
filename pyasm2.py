@@ -1,4 +1,3 @@
-
 """
 
 pyasm2 - x86 assembler library          (C) 2012 Jurriaan Bremer
@@ -656,21 +655,33 @@ class nop(Instruction):
     _opcode_ = 0x90
 
 class mov(Instruction):
-    _enc_ = [
-        (0xb8, eax, (dword, imm)),
-        (0xb9, ecx, (dword, imm)),
-        (0xba, edx, (dword, imm)),
-        (0xbb, ebx, (dword, imm)),
-        (0xbc, esp, (dword, imm)),
-        (0xbd, ebp, (dword, imm)),
-        (0xbe, esi, (dword, imm)),
-        (0xbf, edi, (dword, imm)),
+    # mov r32, imm32
+    _enc_ = zip(range(0xb8, 0xbf), gpr.register, ((dword, imm),) * 8) + [
         (0x8b, (dword, gpr), (dword, mem)),
         (0x89, (dword, mem), (dword, gpr)),
-class pshufd(Instruction):
-    _enc_ = [
-        ('\x66\x0f\x70', (oword, xmm), (oword, memreg), (byte, imm))
+        (0x88, (byte, mem), (byte, gpr)),
+        (0x8a, (byte, gpr), (byte, mem)),
     ]
+
+class push(Instruction):
+    # push r32
+    _enc_ = zip(range(0x50, 0x58), gpr.register)
+
+class pop(Instruction):
+    # pop r32
+    _enc_ = zip(range(0x58, 0x60), gpr.register)
+
+class inc(Instruction):
+    # inc r32
+    _enc_ = zip(range(0x40, 0x48), gpr.register)
+
+class dec(Instruction):
+    # dec r32
+    _enc_ = zip(range(0x48, 0x50), gpr.register)
+
+class xchg(Instruction):
+    # xchg eax, r32
+    _enc_ = zip(range(0x91, 0x98), gpr.register[1:], (eax,) * 8)
 
 class pshufd(Instruction):
     _enc_ = [('\x66\x0f\x70', (oword, xmm), (oword, memxmm), (byte, imm))]

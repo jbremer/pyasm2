@@ -76,6 +76,13 @@ class CheckSyntax(unittest.TestCase):
         eq(mov(dword[ebp+0x30], ecx), 'mov dword [ebp+0x30], ecx',
             '\x89\x4d\x30')
 
+        eq(push(ebx), 'push ebx', '\x53')
+        eq(xchg(ebp, eax), 'xchg ebp, eax', '\x95')
+        eq(push(edi), 'push edi', '\x57')
+        eq(pop(ebx), 'pop ebx', '\x5b')
+        eq(inc(edx), 'inc edx', '\x42')
+        eq(dec(esi), 'dec esi', '\x4e')
+
         eq(pshufd(xmm4, oword[edx], 0x11), 'pshufd xmm4, oword [edx], 0x11',
             '\x66\x0f\x70\x22\x11')
         eq(pshufd(xmm2, xmm0, 0x40), 'pshufd xmm2, xmm0, 0x40',
