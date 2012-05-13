@@ -630,8 +630,17 @@ class Instruction:
             return s + ' ' + ', '.join(map(str, ops))
         return s
 
+    def __len__(self):
+        """Return the Length of the Machine Code."""
+        return len(self.encode())
+
     def encode(self):
         """Encode this Instruction into its machine code representation."""
+        # cache the generated machine code, because i'm too lazy to make a
+        # good implementation of __len__().
+        if hasattr(self, '_encode'):
+            return self._encode
+
         enc = self.encoding()
 
         ret = ''
@@ -685,7 +694,8 @@ class Instruction:
         if modrm_reg or modrm_rm:
             ret += self.modrm(modrm_reg, modrm_rm)
 
-        return ret + disp
+        self._encode = ret + disp
+        return self._encode
 
 class retn(Instruction):
     _opcode_ = 0xc3
