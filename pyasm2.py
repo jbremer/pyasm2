@@ -811,9 +811,7 @@ lbl = Label
 
 class retn(Instruction):
     _opcode_ = 0xc3
-    _enc_ = [
-        (0xc2, (word, imm))
-    ]
+    _enc_ = [(0xc2, (word, imm))]
 
 class nop(Instruction):
     _opcode_ = 0x90
@@ -825,10 +823,8 @@ class mov(Instruction):
         (0x89, (dword, memgpr), (dword, gpr)),
         (0x88, (byte, memgpr), (byte, gpr)),
         (0x8a, (byte, gpr), (byte, memgpr)),
-        (0x80, (byte, memgpr, 0), (byte, imm)),
-        (0x83, (dword, memgpr, 0), (byte, imm)),
-        (0x81, (dword, memgpr, 0), (dword, imm)),
-        (0x82, (byte, memgpr, 0), (byte, imm)),
+        (0xc6, (byte, memgpr, 0), (byte, imm)),
+        (0xc7, (dword, memgpr, 0), (dword, imm)),
     ]
 
 class push(Instruction):
@@ -992,4 +988,12 @@ class cmp(Instruction):
         (0x83, (dword, memgpr, 7), (byte, imm)),
         (0x81, (dword, memgpr, 7), (dword, imm)),
         (0x82, (byte, memgpr, 7), (byte, imm)),
+    ]
+
+class add(Instruction):
+    _enc_ = [
+        (0x80, (byte, memgpr, 0), (byte, imm)),
+        (0x83, (dword, memgpr, 0), (byte, imm)),
+        (0x81, (dword, memgpr, 0), (dword, imm)),
+        (0x82, (byte, memgpr, 0), (byte, imm)),
     ]
