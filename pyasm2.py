@@ -697,9 +697,39 @@ class Instruction:
         self._encode = ret + disp
         return self._encode
 
+class RelativeJump(Instruction):
+    _index_ = None
+
+    """Relative Jumps are somewhat special opcodes, they take labels."""
+    def __init__(self, lbl):
+        self.lbl = lbl if isinstance(lbl, Label) else Label(lbl)
+
+    def __len__(self):
+        """For the sake of simplicity, we return a relative jmp with 32bit
+            relative address."""
+        return 6 if self._index_ is not None else 5
+
+    def __str__(self):
+        return self.__class__.__name__ + ' ' + str(self.lbl)
+
+    def encode(self):
+        """Encode this Relative Jump."""
+        # TODO decent relative jump stuff
+        if self._index_ is None:
+            return chr(self._opcode_) + dword.pack(0)
+        else:
+            return '\x0f' + chr(0x80 + self._index_) + dword.pack(0)
+
 class Block:
+    __blocknr = 0
     def __init__(self, *args):
-        self.instructions = list(args)
+        self.blocknr = self.__blocknr
+        self.__blocknr += 1
+        self.labelcnt = 0
+
+        # add each instruction using our simple handler.
+        self.instructions = []
+        map(self.__iadd__, args)
 
     def __len__(self):
         """Return the length of all instructions chained."""
@@ -709,17 +739,69 @@ class Block:
         """Return a string representation of all instructions chained."""
         return '\n'.join(map(str, self.instructions))
 
+    def encode(self):
+        """Return the Machine Code representation."""
+        return ''.join(map(lambda x: x.encode(), self.instructions))
+
     def __iadd__(self, other):
         """self += other"""
-        if isinstance(other, Instruction):
+        if isinstance(other, Label):
+            other.parent = self
+            other.blocknr = self.blocknr
+            other.labelnr = self.labelcnt
+            self.labelcnt += 1
+            other.update()
             self.instructions.append(other)
-        elif isinstance(other, block):
+        elif isinstance(other, RelativeJump):
+            other.lbl.parent = self
+            other.lbl.blocknr = self.blocknr
+            other.lbl.labelnr = self.labelcnt
+            self.labelcnt += 1
+            other.lbl.update()
+            self.instructions.append(other)
+        elif isinstance(other, Instruction):
+            self.instructions.append(other)
+        elif isinstance(other, Block):
             self.instructions.extend(other.instructions)
         else:
             raise Exception('This object is not welcome here.')
         return self
 
 block = Block
+
+class Label(Instruction):
+    """Labels allow Blocks to define relative jumps without knowing the exact
+        offset beforehand."""
+    def __init__(self, index=None):
+        """Initialize a new Label or point to an existing label.
+
+        Initializing a Label object without any arguments creates an anonymous
+        label, these can later be referenced by using an index, such as 1
+        (the next label) or -1 (the last label.)
+
+        """
+        self.index = index
+
+        print 'index', self.index
+
+    def update(self):
+        """Called by Block in order to get things straight."""
+        if self.index is not None:
+            self.index = self.labelnr + self.index
+
+    def __len__(self):
+        """Just in case, Labels don't have a size as Machine Code."""
+        return 0
+
+    def encode(self):
+        """Just in case, Labels don't have a Machine Code representation."""
+        return ''
+
+    def __str__(self):
+        labelnr = self.index if self.index is not None else self.labelnr
+        return '__lbl_%d_%d' % (self.blocknr, labelnr)
+
+lbl = Label
 
 class retn(Instruction):
     _opcode_ = 0xc3
@@ -839,3 +921,57 @@ class movss(Instruction):
         ('\xf3\x0f\x10', (oword, xmm), (oword, memxmm)),
         ('\xf3\x0f\x11', (oword, memxmm), (oword, xmm)),
     ]
+
+class jo(RelativeJump):
+    _index_ = 0
+
+class jno(RelativeJump):
+    _index_ = 1
+
+class jb(RelativeJump):
+    _index_ = 2
+
+class jnb(RelativeJump):
+    _index_ = 3
+
+class jz(RelativeJump):
+    _index_ = 4
+
+class jnz(RelativeJump):
+    _index_ = 5
+
+class jbe(RelativeJump):
+    _index_ = 6
+
+class jnbe(RelativeJump):
+    _index_ = 7
+
+class js(RelativeJump):
+    _index_ = 8
+
+class jns(RelativeJump):
+    _index_ = 9
+
+class jp(RelativeJump):
+    _index_ = 10
+
+class jnp(RelativeJump):
+    _index_ = 11
+
+class jl(RelativeJump):
+    _index_ = 12
+
+class jnl(RelativeJump):
+    _index_ = 13
+
+class jle(RelativeJump):
+    _index_ = 14
+
+class jnle(RelativeJump):
+    _index_ = 15
+
+class jmp(RelativeJump):
+    _opcode_ = 0xe9
+
+class call(RelativeJump):
+    _opcode_ = 0xe8
