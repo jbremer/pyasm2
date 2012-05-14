@@ -672,7 +672,13 @@ class Instruction:
             if op is None or not isinstance(op, tuple):
                 continue
 
-            size, typ = op
+            size, typ = op[:2]
+
+            # if a third index is given in the operand's tuple, then that
+            # means that we have to emulate the `reg' for the modrm byte.
+            # the value of `reg' is therefore given as third value.
+            if len(op) == 3:
+                modrm_reg = gpr.register[op[2]]
 
             # handle Immediates
             if typ == imm:
@@ -819,6 +825,10 @@ class mov(Instruction):
         (0x89, (dword, memgpr), (dword, gpr)),
         (0x88, (byte, memgpr), (byte, gpr)),
         (0x8a, (byte, gpr), (byte, memgpr)),
+        (0x80, (byte, memgpr, 0), (byte, imm)),
+        (0x83, (dword, memgpr, 0), (byte, imm)),
+        (0x81, (dword, memgpr, 0), (dword, imm)),
+        (0x82, (byte, memgpr, 0), (byte, imm)),
     ]
 
 class push(Instruction):
@@ -975,3 +985,11 @@ class jmp(RelativeJump):
 
 class call(RelativeJump):
     _opcode_ = 0xe8
+
+class cmp(Instruction):
+    _enc_ = [
+        (0x80, (byte, memgpr, 7), (byte, imm)),
+        (0x83, (dword, memgpr, 7), (byte, imm)),
+        (0x81, (dword, memgpr, 7), (dword, imm)),
+        (0x82, (byte, memgpr, 7), (byte, imm)),
+    ]

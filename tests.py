@@ -108,6 +108,11 @@ class CheckSyntax(unittest.TestCase):
         eq(movapd(xmm6, oword [ebx]), 'movapd xmm6, oword [ebx]',
             '\x66\x0f\x28\x33')
 
+        eq(mov(byte[eax], 0x42), 'mov byte [eax], 0x42', '\x80\x00\x42')
+        eq(cmp(dword[esp+ecx*8+0x0c], 0x42),
+            'cmp dword [esp+ecx*8+0xc], 0x42', '\x83\x7c\xcc\x0c\x42')
+        eq(cmp(byte[ebx], 0x13), 'cmp byte [ebx], 0x13', '\x80\x3b\x13')
+
     def test_block(self):
         eq = self.assertEqual
 
