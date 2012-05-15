@@ -131,6 +131,14 @@ class CheckSyntax(unittest.TestCase):
         eq(rol(edx, cl), 'rol edx, cl', '\xd3\xc2')
         eq(xor(edx, esi), 'xor edx, esi', '\x31\xf2')
         eq(shl(esi, 4), 'shl esi, 0x4', '\xc1\xe6\x04')
+        eq(xchg(byte[esp+0x42], al), 'xchg byte [esp+0x42], al',
+            '\x86\x44\x24\x42')
+        eq(xchg(al, byte[esp+0x42]), 'xchg byte [esp+0x42], al',
+            '\x86\x44\x24\x42')
+        eq(div(eax), 'div eax', '\xf7\xf0')
+        eq(movzx(eax, byte [1]), 'movzx eax, byte [0x1]',
+            '\x0f\xb6\x05\x01\x00\x00\x00')
+        eq(movsx(eax, al), 'movsx eax, al', '\x0f\xbe\xc0')
 
     def test_block(self):
         eq = self.assertEqual

@@ -460,8 +460,19 @@ class Instruction:
         self.rep = rep
         self.repne = repne
 
+        # clean operands, if needed
+        self.clean()
+
         # find the correct encoding for this combination of operands
         self.encoding()
+
+    def clean(self):
+        """Alters the order of operands if needed."""
+
+        # the `xchg' instruction requires operands ordered as `memgpr, gpr'.
+        if isinstance(self, xchg) and isinstance(self.op1, gpr) and \
+                isinstance(self.op2, mem):
+            self.op1, self.op2 = self.op2, self.op1
 
     def modrm(self, op1, op2):
         """Encode two operands into their modrm representation."""
@@ -858,6 +869,18 @@ class mov(Instruction):
         (0xc7, (dword, memgpr, 0), (dword, imm)),
     ]
 
+class movzx(Instruction):
+    _enc_ = [
+        ('\x0f\xb6', (dword, gpr), (byte, memgpr)),
+        ('\x0f\xb7', (dword, gpr), (word, memgpr)),
+    ]
+
+class movsx(Instruction):
+    _enc_ = [
+        ('\x0f\xbe', (dword, gpr), (byte, memgpr)),
+        ('\x0f\xbf', (dword, gpr), (word, memgpr)),
+    ]
+
 class push(Instruction):
     # push r32
     _enc_ = zip(range(0x50, 0x58), gpr.register32) + [
@@ -865,6 +888,8 @@ class push(Instruction):
         (0x0e, cs),
         (0x16, ss),
         (0x1e, ds),
+        ('\x0f\xa0', fs),
+        ('\x0f\xa8', gs),
         (0x6a, (byte, imm)),
         (0x68, (dword, imm)),
         (0xff, (dword, mem, 6)),
@@ -876,20 +901,28 @@ class pop(Instruction):
         (0x07, es),
         (0x17, ss),
         (0x1f, ds),
+        ('\x0f\xa1', fs),
+        ('\x0f\xa9', gs),
         (0x8f, (dword, mem, 0)),
     ]
 
 class inc(Instruction):
     # inc r32
-    _enc_ = zip(range(0x40, 0x48), gpr.register32)
+    _enc_ = zip(range(0x40, 0x48), gpr.register32) + [
+        (0xfe, (byte, memgpr, 0)),
+        (0xff, (dword, memgpr, 0))]
 
 class dec(Instruction):
     # dec r32
-    _enc_ = zip(range(0x48, 0x50), gpr.register32)
+    _enc_ = zip(range(0x48, 0x50), gpr.register32) + [
+        (0xfe, (byte, memgpr, 1)),
+        (0xff, (dword, memgpr, 1))]
 
 class xchg(Instruction):
     # xchg eax, r32
-    _enc_ = zip(range(0x91, 0x98), gpr.register32[1:], (eax,) * 8)
+    _enc_ = zip(range(0x91, 0x98), gpr.register32[1:], (eax,) * 8) + [
+        (0x86, (byte, memgpr), (byte, gpr)),
+        (0x87, (dword, memgpr), (dword, memgpr))]
 
 class stosb(Instruction):
     _opcode_ = 0xaa
@@ -1067,6 +1100,8 @@ class test(Instruction):
         (0x85, (dword, memgpr), (dword, memgpr)),
         (0xa8, al, (byte, imm)),
         (0xa9, eax, (dword, imm)),
+        (0xf6, (byte, memgpr, 0), (byte, imm)),
+        (0xf7, (dword, memgpr, 0), (dword, imm)),
     ]
 
 _group_2_opcodes = lambda x: [
@@ -1100,3 +1135,25 @@ class sal(Instruction):
 
 class sar(Instruction):
     _enc_ = _group_2_opcodes(7)
+
+_group_3_opcodes = lambda x: [
+    (0xf6, (byte, memgpr, x)),
+    (0xf7, (dword, memgpr, x))]
+
+class _not(Instruction):
+    _enc_ = _group_3_opcodes(2)
+
+class neg(Instruction):
+    _enc_ = _group_3_opcodes(3)
+
+class mul(Instruction):
+    _enc_ = _group_3_opcodes(4)
+
+class imul(Instruction):
+    _enc_ = _group_3_opcodes(5)
+
+class div(Instruction):
+    _enc_ = _group_3_opcodes(6)
+
+class idiv(Instruction):
+    _enc_ = _group_3_opcodes(7)
