@@ -24,6 +24,13 @@ class Immediate:
         self.value = value
         self.addr = addr
 
+        if value < 2**8:
+            self.size = byte.size
+        elif value < 2**16:
+            self.size = word.size
+        else:
+            self.size = dword.size
+
     def __int__(self):
         return self.value
 
@@ -56,12 +63,12 @@ class SegmentRegister:
 imm = Immediate
 
 # define each segment register.
-es = ES = SegmentRegister(0, 'es')
-cs = CS = SegmentRegister(1, 'cs')
-ss = SS = SegmentRegister(2, 'ss')
-ds = DS = SegmentRegister(3, 'ds')
-fs = FS = SegmentRegister(4, 'fs')
-gs = GS = SegmentRegister(5, 'gs')
+es = SegmentRegister(0, 'es')
+cs = SegmentRegister(1, 'cs')
+ss = SegmentRegister(2, 'ss')
+ds = SegmentRegister(3, 'ds')
+fs = SegmentRegister(4, 'fs')
+gs = SegmentRegister(5, 'gs')
 
 # array of segment registers, according to their index
 SegmentRegister.register = (es, cs, ss, ds, fs, gs)
@@ -207,7 +214,7 @@ class MemoryAddress:
         """Decodes a Memory Address encoded with __index__()."""
         mults = (None, 1, 2, 4, 8)
         # for decoding general purpose registers
-        f = lambda x, y: y.register[x-1] if x else None
+        f = lambda x, y: y.register32[x-1] if x else None
         return MemoryAddress(disp=index % 2**32 if index % 2**32 else None,
             reg1=f((index >> 32) % 2**4, GeneralPurposeRegister),
             reg2=f((index >> 36) % 2**4, GeneralPurposeRegister),
@@ -332,17 +339,37 @@ class GeneralPurposeRegister:
         return MemoryAddress(reg1=self).__index__()
 
 # define the general purpose registers
-eax = EAX = GeneralPurposeRegister(0, 'eax', dword)
-ecx = ECX = GeneralPurposeRegister(1, 'ecx', dword)
-edx = EDX = GeneralPurposeRegister(2, 'edx', dword)
-ebx = EBX = GeneralPurposeRegister(3, 'ebx', dword)
-esp = ESP = GeneralPurposeRegister(4, 'esp', dword)
-ebp = EBP = GeneralPurposeRegister(5, 'ebp', dword)
-esi = ESI = GeneralPurposeRegister(6, 'esi', dword)
-edi = EDI = GeneralPurposeRegister(7, 'edi', dword)
+al = GeneralPurposeRegister(0, 'al', byte)
+cl = GeneralPurposeRegister(1, 'cl', byte)
+dl = GeneralPurposeRegister(2, 'dl', byte)
+bl = GeneralPurposeRegister(3, 'bl', byte)
+ah = GeneralPurposeRegister(4, 'ah', byte)
+ch = GeneralPurposeRegister(5, 'ch', byte)
+dh = GeneralPurposeRegister(6, 'dh', byte)
+bh = GeneralPurposeRegister(7, 'bh', byte)
+
+ax = GeneralPurposeRegister(0, 'ax', word)
+cx = GeneralPurposeRegister(1, 'cx', word)
+dx = GeneralPurposeRegister(2, 'dx', word)
+bx = GeneralPurposeRegister(3, 'bx', word)
+sp = GeneralPurposeRegister(4, 'sp', word)
+bp = GeneralPurposeRegister(5, 'bp', word)
+si = GeneralPurposeRegister(6, 'si', word)
+di = GeneralPurposeRegister(7, 'di', word)
+
+eax = GeneralPurposeRegister(0, 'eax', dword)
+ecx = GeneralPurposeRegister(1, 'ecx', dword)
+edx = GeneralPurposeRegister(2, 'edx', dword)
+ebx = GeneralPurposeRegister(3, 'ebx', dword)
+esp = GeneralPurposeRegister(4, 'esp', dword)
+ebp = GeneralPurposeRegister(5, 'ebp', dword)
+esi = GeneralPurposeRegister(6, 'esi', dword)
+edi = GeneralPurposeRegister(7, 'edi', dword)
 
 # array of general purpose registers, according to their index
-GeneralPurposeRegister.register = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
+GeneralPurposeRegister.register8 = (al, cl, dl, bl, ah, ch, dh, bh)
+GeneralPurposeRegister.register16 = (ax, cx, dx, bx, sp, bp, si, di)
+GeneralPurposeRegister.register32 = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
 
 # make an alias `gpr' to GeneralPurposeRegister in order to simplify the
 # creation of Instruction's
@@ -361,14 +388,14 @@ class XmmRegister:
     def __repr__(self):
         return self.name
 
-xmm0 = XMM0 = XmmRegister(0, 'xmm0')
-xmm1 = XMM1 = XmmRegister(1, 'xmm1')
-xmm2 = XMM2 = XmmRegister(2, 'xmm2')
-xmm3 = XMM3 = XmmRegister(3, 'xmm3')
-xmm4 = XMM4 = XmmRegister(4, 'xmm4')
-xmm5 = XMM5 = XmmRegister(5, 'xmm5')
-xmm6 = XMM6 = XmmRegister(6, 'xmm6')
-xmm7 = XMM7 = XmmRegister(7, 'xmm7')
+xmm0 = XmmRegister(0, 'xmm0')
+xmm1 = XmmRegister(1, 'xmm1')
+xmm2 = XmmRegister(2, 'xmm2')
+xmm3 = XmmRegister(3, 'xmm3')
+xmm4 = XmmRegister(4, 'xmm4')
+xmm5 = XmmRegister(5, 'xmm5')
+xmm6 = XmmRegister(6, 'xmm6')
+xmm7 = XmmRegister(7, 'xmm7')
 
 # make an alias `xmm' to XmmRegister in order to simplify the creation of
 # Instruction's
@@ -579,7 +606,8 @@ class Instruction:
             # check the operand (and size) of this match
             elif not issubclass(op1[1], self.op1.__class__) or \
                     hasattr(self.op1, 'size') and op1[0] is not None and \
-                    op1[0].size != self.op1.size:
+                    (op1[0].size != self.op1.size if op1[1] != imm else
+                    self.op1.size > op1[0].size):
                 continue
 
             if op2 is None:
@@ -594,7 +622,8 @@ class Instruction:
             # check the operand (and size) of this match
             elif not issubclass(op2[1], self.op2.__class__) or \
                     hasattr(self.op2, 'size') and op2[0] is not None and \
-                    op2[0].size != self.op2.size:
+                    (op2[0].size != self.op2.size if op2[1] != imm else
+                    self.op2.size > op2[0].size):
                 continue
 
             if op3 is None:
@@ -678,7 +707,7 @@ class Instruction:
             # means that we have to emulate the `reg' for the modrm byte.
             # the value of `reg' is therefore given as third value.
             if len(op) == 3:
-                modrm_reg = gpr.register[op[2]]
+                modrm_reg = gpr.register32[op[2]]
 
             # handle Immediates
             if typ == imm:
@@ -817,8 +846,10 @@ class nop(Instruction):
     _opcode_ = 0x90
 
 class mov(Instruction):
-    # mov r32, imm32
-    _enc_ = zip(range(0xb8, 0xc0), gpr.register, ((dword, imm),) * 8) + [
+    # mov r32, imm32 and mov r8, imm32
+    _enc_ = \
+        zip(range(0xb0, 0xb8), gpr.register8, ((byte, imm),) * 8) + \
+        zip(range(0xb8, 0xc0), gpr.register32, ((dword, imm),) * 8) + [
         (0x8b, (dword, gpr), (dword, memgpr)),
         (0x89, (dword, memgpr), (dword, gpr)),
         (0x88, (byte, memgpr), (byte, gpr)),
@@ -829,23 +860,23 @@ class mov(Instruction):
 
 class push(Instruction):
     # push r32
-    _enc_ = zip(range(0x50, 0x58), gpr.register)
+    _enc_ = zip(range(0x50, 0x58), gpr.register32)
 
 class pop(Instruction):
     # pop r32
-    _enc_ = zip(range(0x58, 0x60), gpr.register)
+    _enc_ = zip(range(0x58, 0x60), gpr.register32)
 
 class inc(Instruction):
     # inc r32
-    _enc_ = zip(range(0x40, 0x48), gpr.register)
+    _enc_ = zip(range(0x40, 0x48), gpr.register32)
 
 class dec(Instruction):
     # dec r32
-    _enc_ = zip(range(0x48, 0x50), gpr.register)
+    _enc_ = zip(range(0x48, 0x50), gpr.register32)
 
 class xchg(Instruction):
     # xchg eax, r32
-    _enc_ = zip(range(0x91, 0x98), gpr.register[1:], (eax,) * 8)
+    _enc_ = zip(range(0x91, 0x98), gpr.register32[1:], (eax,) * 8)
 
 class stosb(Instruction):
     _opcode_ = 0xaa
@@ -992,8 +1023,13 @@ class cmp(Instruction):
 
 class add(Instruction):
     _enc_ = [
+        (0x00, (byte, memgpr), (byte, gpr)),
+        (0x01, (dword, memgpr), (dword, gpr)),
+        (0x02, (byte, gpr), (byte, memgpr)),
+        (0x03, (dword, gpr), (dword, memgpr)),
+        (0x04, al, (byte, imm)),
         (0x80, (byte, memgpr, 0), (byte, imm)),
         (0x83, (dword, memgpr, 0), (byte, imm)),
+        (0x05, eax, (dword, imm)),
         (0x81, (dword, memgpr, 0), (dword, imm)),
-        (0x82, (byte, memgpr, 0), (byte, imm)),
     ]

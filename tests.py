@@ -113,6 +113,10 @@ class CheckSyntax(unittest.TestCase):
             'cmp dword [esp+ecx*8+0xc], 0x42', '\x83\x7c\xcc\x0c\x42')
         eq(cmp(byte[ebx], 0x13), 'cmp byte [ebx], 0x13', '\x80\x3b\x13')
         eq(mov(byte[ecx], 0x37), 'mov byte [ecx], 0x37', '\xc6\x01\x37')
+        eq(add(eax, 1), 'add eax, 0x1', '\x83\xc0\x01')
+        eq(mov(bl, 1), 'mov bl, 0x1', '\xb3\x01')
+        eq(add(eax, 0x1111), 'add eax, 0x1111', '\x05\x11\x11\x00\x00')
+        eq(add(ebx, 0x2222), 'add ebx, 0x2222', '\x81\xc3\x22\x22\x00\x00')
 
     def test_block(self):
         eq = self.assertEqual
