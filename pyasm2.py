@@ -1013,14 +1013,6 @@ class jmp(RelativeJump):
 class call(RelativeJump):
     _opcode_ = 0xe8
 
-class cmp(Instruction):
-    _enc_ = [
-        (0x80, (byte, memgpr, 7), (byte, imm)),
-        (0x83, (dword, memgpr, 7), (byte, imm)),
-        (0x81, (dword, memgpr, 7), (dword, imm)),
-        (0x82, (byte, memgpr, 7), (byte, imm)),
-    ]
-
 class add(Instruction):
     _enc_ = [
         (0x00, (byte, memgpr), (byte, gpr)),
@@ -1032,4 +1024,96 @@ class add(Instruction):
         (0x83, (dword, memgpr, 0), (byte, imm)),
         (0x05, eax, (dword, imm)),
         (0x81, (dword, memgpr, 0), (dword, imm)),
+    ]
+
+class _or(Instruction):
+    _enc_ = [
+        (0x08, (byte, memgpr), (byte, gpr)),
+        (0x09, (dword, memgpr), (dword, gpr)),
+        (0x0a, (byte, gpr), (byte, memgpr)),
+        (0x0b, (dword, gpr), (dword, memgpr)),
+        (0x0c, al, (byte, imm)),
+        (0x80, (byte, memgpr, 1), (byte, imm)),
+        (0x83, (dword, memgpr, 1), (byte, imm)),
+        (0x0d, eax, (dword, imm)),
+        (0x81, (dword, memgpr, 1), (dword, imm)),
+    ]
+
+class adc(Instruction):
+    _enc_ = [
+        (0x10, (byte, memgpr), (byte, gpr)),
+        (0x11, (dword, memgpr), (dword, gpr)),
+        (0x12, (byte, gpr), (byte, memgpr)),
+        (0x13, (dword, gpr), (dword, memgpr)),
+        (0x14, al, (byte, imm)),
+        (0x80, (byte, memgpr, 2), (byte, imm)),
+        (0x83, (dword, memgpr, 2), (byte, imm)),
+        (0x15, eax, (dword, imm)),
+        (0x81, (dword, memgpr, 2), (dword, imm)),
+    ]
+
+class sbb(Instruction):
+    _enc_ = [
+        (0x18, (byte, memgpr), (byte, gpr)),
+        (0x19, (dword, memgpr), (dword, gpr)),
+        (0x1a, (byte, gpr), (byte, memgpr)),
+        (0x1b, (dword, gpr), (dword, memgpr)),
+        (0x1c, al, (byte, imm)),
+        (0x80, (byte, memgpr, 3), (byte, imm)),
+        (0x83, (dword, memgpr, 3), (byte, imm)),
+        (0x1d, eax, (dword, imm)),
+        (0x81, (dword, memgpr, 3), (dword, imm)),
+    ]
+
+class and(Instruction):
+    _enc_ = [
+        (0x20, (byte, memgpr), (byte, gpr)),
+        (0x21, (dword, memgpr), (dword, gpr)),
+        (0x22, (byte, gpr), (byte, memgpr)),
+        (0x23, (dword, gpr), (dword, memgpr)),
+        (0x24, al, (byte, imm)),
+        (0x80, (byte, memgpr, 4), (byte, imm)),
+        (0x83, (dword, memgpr, 4), (byte, imm)),
+        (0x25, eax, (dword, imm)),
+        (0x81, (dword, memgpr, 4), (dword, imm)),
+    ]
+
+class sub(Instruction):
+    _enc_ = [
+        (0x28, (byte, memgpr), (byte, gpr)),
+        (0x29, (dword, memgpr), (dword, gpr)),
+        (0x2a, (byte, gpr), (byte, memgpr)),
+        (0x2b, (dword, gpr), (dword, memgpr)),
+        (0x2c, al, (byte, imm)),
+        (0x80, (byte, memgpr, 5), (byte, imm)),
+        (0x83, (dword, memgpr, 5), (byte, imm)),
+        (0x2d, eax, (dword, imm)),
+        (0x81, (dword, memgpr, 5), (dword, imm)),
+    ]
+
+class xor(Instruction):
+    _enc_ = [
+        (0x30, (byte, memgpr), (byte, gpr)),
+        (0x31, (dword, memgpr), (dword, gpr)),
+        (0x32, (byte, gpr), (byte, memgpr)),
+        (0x33, (dword, gpr), (dword, memgpr)),
+        (0x34, al, (byte, imm)),
+        (0x80, (byte, memgpr, 6), (byte, imm)),
+        (0x83, (dword, memgpr, 6), (byte, imm)),
+        (0x35, eax, (dword, imm)),
+        (0x81, (dword, memgpr, 6), (dword, imm)),
+    ]
+
+class cmp(Instruction):
+    _enc_ = [
+        (0x38, (byte, memgpr), (byte, gpr)),
+        (0x39, (dword, memgpr), (dword, gpr)),
+        (0x3a, (byte, gpr), (byte, memgpr)),
+        (0x3b, (dword, gpr), (dword, memgpr)),
+        (0x3c, al, (byte, imm)),
+        (0x80, (byte, memgpr, 7), (byte, imm)),
+        (0x83, (dword, memgpr, 7), (byte, imm)),
+        (0x81, (dword, memgpr, 7), (dword, imm)),
+        (0x3d, eax, (dword, imm)),
+        (0x82, (byte, memgpr, 7), (byte, imm)),
     ]
