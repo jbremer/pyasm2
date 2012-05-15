@@ -155,5 +155,15 @@ class CheckSyntax(unittest.TestCase):
         eq((len(b), str(b)), (8, 'mov eax, ebx\nmov ecx, edx\n' +
             'mov esi, dword [eax]\nrep scasb'))
 
+    def test_optimization(self):
+        eq = lambda i, s, b: (self.assertEqual(str(i), s,
+            'Invalid string representation for: ' + str(i)),
+            self.assertEqual(i.encode(), b, 'Invalid encoding for: ' +
+                str(i) + ' -> ' + repr(i.encode())))
+
+        # [ebx*2] -> [ebx+ebx]
+        eq(mov(eax, dword[ebx*2+3]), 'mov eax, dword [ebx+ebx+0x3]',
+            '\x8b\x44\x1b\x03')
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -123,6 +123,17 @@ class MemoryAddress:
 
         return self
 
+    def final_clean(self):
+        """Special clean function to clean and/or optimize right before
+            assembling this Memory Address.
+
+        When `reg1' is None, `mult' is two and `reg2' is not `esp', then we
+        can optimize it by using `reg1', ie [eax*2] -> [eax+eax].
+
+        """
+        if self.reg1 is None and self.mult == 2 and self.reg2 != esp:
+            self.reg1, self.mult = self.reg2, 1
+
     def merge(self, other):
         """Merge self with a Displacement, Register or Memory Address."""
         # it is not possible to merge with one of the predefined Memory
@@ -473,6 +484,12 @@ class Instruction:
         if isinstance(self, xchg) and isinstance(self.op1, gpr) and \
                 isinstance(self.op2, mem):
             self.op1, self.op2 = self.op2, self.op1
+
+        if isinstance(self.op1, mem):
+            self.op1.final_clean()
+
+        if isinstance(self.op2, mem):
+            self.op2.final_clean()
 
     def modrm(self, op1, op2):
         """Encode two operands into their modrm representation."""
