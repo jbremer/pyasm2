@@ -860,11 +860,24 @@ class mov(Instruction):
 
 class push(Instruction):
     # push r32
-    _enc_ = zip(range(0x50, 0x58), gpr.register32)
+    _enc_ = zip(range(0x50, 0x58), gpr.register32) + [
+        (0x06, es),
+        (0x0e, cs),
+        (0x16, ss),
+        (0x1e, ds),
+        (0x6a, (byte, imm)),
+        (0x68, (dword, imm)),
+        (0xff, (dword, mem, 6)),
+    ]
 
 class pop(Instruction):
     # pop r32
-    _enc_ = zip(range(0x58, 0x60), gpr.register32)
+    _enc_ = zip(range(0x58, 0x60), gpr.register32) + [
+        (0x07, es),
+        (0x17, ss),
+        (0x1f, ds),
+        (0x8f, (dword, mem, 0)),
+    ]
 
 class inc(Instruction):
     # inc r32
@@ -1013,107 +1026,77 @@ class jmp(RelativeJump):
 class call(RelativeJump):
     _opcode_ = 0xe8
 
+_group_1_opcodes = lambda x: [
+    (0x00+8*x, (byte, memgpr), (byte, gpr)),
+    (0x01+8*x, (dword, memgpr), (dword, gpr)),
+    (0x02+8*x, (byte, gpr), (byte, memgpr)),
+    (0x03+8*x, (dword, gpr), (dword, memgpr)),
+    (0x04+8*x, al, (byte, imm)),
+    (0x80, (byte, memgpr, x), (byte, imm)),
+    (0x83, (dword, memgpr, x), (byte, imm)),
+    (0x05+8*x, eax, (dword, imm)),
+    (0x81, (dword, memgpr, x), (dword, imm))]
+
 class add(Instruction):
-    _enc_ = [
-        (0x00, (byte, memgpr), (byte, gpr)),
-        (0x01, (dword, memgpr), (dword, gpr)),
-        (0x02, (byte, gpr), (byte, memgpr)),
-        (0x03, (dword, gpr), (dword, memgpr)),
-        (0x04, al, (byte, imm)),
-        (0x80, (byte, memgpr, 0), (byte, imm)),
-        (0x83, (dword, memgpr, 0), (byte, imm)),
-        (0x05, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 0), (dword, imm)),
-    ]
+    _enc_ = _group_1_opcodes(0)
 
 class _or(Instruction):
-    _enc_ = [
-        (0x08, (byte, memgpr), (byte, gpr)),
-        (0x09, (dword, memgpr), (dword, gpr)),
-        (0x0a, (byte, gpr), (byte, memgpr)),
-        (0x0b, (dword, gpr), (dword, memgpr)),
-        (0x0c, al, (byte, imm)),
-        (0x80, (byte, memgpr, 1), (byte, imm)),
-        (0x83, (dword, memgpr, 1), (byte, imm)),
-        (0x0d, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 1), (dword, imm)),
-    ]
+    _enc_ = _group_1_opcodes(1)
 
 class adc(Instruction):
-    _enc_ = [
-        (0x10, (byte, memgpr), (byte, gpr)),
-        (0x11, (dword, memgpr), (dword, gpr)),
-        (0x12, (byte, gpr), (byte, memgpr)),
-        (0x13, (dword, gpr), (dword, memgpr)),
-        (0x14, al, (byte, imm)),
-        (0x80, (byte, memgpr, 2), (byte, imm)),
-        (0x83, (dword, memgpr, 2), (byte, imm)),
-        (0x15, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 2), (dword, imm)),
-    ]
+    _enc_ = _group_1_opcodes(2)
 
 class sbb(Instruction):
-    _enc_ = [
-        (0x18, (byte, memgpr), (byte, gpr)),
-        (0x19, (dword, memgpr), (dword, gpr)),
-        (0x1a, (byte, gpr), (byte, memgpr)),
-        (0x1b, (dword, gpr), (dword, memgpr)),
-        (0x1c, al, (byte, imm)),
-        (0x80, (byte, memgpr, 3), (byte, imm)),
-        (0x83, (dword, memgpr, 3), (byte, imm)),
-        (0x1d, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 3), (dword, imm)),
-    ]
+    _enc_ = _group_1_opcodes(3)
 
-class and(Instruction):
-    _enc_ = [
-        (0x20, (byte, memgpr), (byte, gpr)),
-        (0x21, (dword, memgpr), (dword, gpr)),
-        (0x22, (byte, gpr), (byte, memgpr)),
-        (0x23, (dword, gpr), (dword, memgpr)),
-        (0x24, al, (byte, imm)),
-        (0x80, (byte, memgpr, 4), (byte, imm)),
-        (0x83, (dword, memgpr, 4), (byte, imm)),
-        (0x25, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 4), (dword, imm)),
-    ]
+class _and(Instruction):
+    _enc_ = _group_1_opcodes(4)
 
 class sub(Instruction):
-    _enc_ = [
-        (0x28, (byte, memgpr), (byte, gpr)),
-        (0x29, (dword, memgpr), (dword, gpr)),
-        (0x2a, (byte, gpr), (byte, memgpr)),
-        (0x2b, (dword, gpr), (dword, memgpr)),
-        (0x2c, al, (byte, imm)),
-        (0x80, (byte, memgpr, 5), (byte, imm)),
-        (0x83, (dword, memgpr, 5), (byte, imm)),
-        (0x2d, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 5), (dword, imm)),
-    ]
+    _enc_ = _group_1_opcodes(5)
 
 class xor(Instruction):
-    _enc_ = [
-        (0x30, (byte, memgpr), (byte, gpr)),
-        (0x31, (dword, memgpr), (dword, gpr)),
-        (0x32, (byte, gpr), (byte, memgpr)),
-        (0x33, (dword, gpr), (dword, memgpr)),
-        (0x34, al, (byte, imm)),
-        (0x80, (byte, memgpr, 6), (byte, imm)),
-        (0x83, (dword, memgpr, 6), (byte, imm)),
-        (0x35, eax, (dword, imm)),
-        (0x81, (dword, memgpr, 6), (dword, imm)),
-    ]
+    _enc_ = _group_1_opcodes(6)
 
 class cmp(Instruction):
+    _enc_ = _group_1_opcodes(7)
+
+class test(Instruction):
     _enc_ = [
-        (0x38, (byte, memgpr), (byte, gpr)),
-        (0x39, (dword, memgpr), (dword, gpr)),
-        (0x3a, (byte, gpr), (byte, memgpr)),
-        (0x3b, (dword, gpr), (dword, memgpr)),
-        (0x3c, al, (byte, imm)),
-        (0x80, (byte, memgpr, 7), (byte, imm)),
-        (0x83, (dword, memgpr, 7), (byte, imm)),
-        (0x81, (dword, memgpr, 7), (dword, imm)),
-        (0x3d, eax, (dword, imm)),
-        (0x82, (byte, memgpr, 7), (byte, imm)),
+        (0x84, (byte, memgpr), (byte, gpr)),
+        (0x85, (dword, memgpr), (dword, memgpr)),
+        (0xa8, al, (byte, imm)),
+        (0xa9, eax, (dword, imm)),
     ]
+
+_group_2_opcodes = lambda x: [
+    (0xd0, (byte, memgpr, x), imm(1)),
+    (0xd1, (dword, memgpr, x), imm(1)),
+    (0xd2, (byte, memgpr, x), cl),
+    (0xd3, (dword, memgpr, x), cl),
+    (0xc0, (byte, memgpr, x), (byte, imm)),
+    (0xc1, (dword, memgpr, x), (byte, imm))]
+
+class rol(Instruction):
+    _enc_ = _group_2_opcodes(0)
+
+class ror(Instruction):
+    _enc_ = _group_2_opcodes(1)
+
+class rcl(Instruction):
+    _enc_ = _group_2_opcodes(2)
+
+class rcr(Instruction):
+    _enc_ = _group_2_opcodes(3)
+
+class shl(Instruction):
+    _enc_ = _group_2_opcodes(4)
+
+class shr(Instruction):
+    _enc_ = _group_2_opcodes(5)
+
+class sal(Instruction):
+    _enc_ = _group_2_opcodes(6)
+
+class sar(Instruction):
+    _enc_ = _group_2_opcodes(7)

@@ -117,6 +117,20 @@ class CheckSyntax(unittest.TestCase):
         eq(mov(bl, 1), 'mov bl, 0x1', '\xb3\x01')
         eq(add(eax, 0x1111), 'add eax, 0x1111', '\x05\x11\x11\x00\x00')
         eq(add(ebx, 0x2222), 'add ebx, 0x2222', '\x81\xc3\x22\x22\x00\x00')
+        eq(push(es), 'push es', '\x06')
+        eq(push(0x42), 'push 0x42', '\x6a\x42')
+        eq(push(0x111), 'push 0x111', '\x68\x11\x01\x00\x00')
+        eq(push(dword[2]), 'push dword [0x2]', '\xff\x35\x02\x00\x00\x00')
+        eq(push(dword[esp+edx*2]), 'push dword [esp+edx*2]', '\xff\x34\x54')
+        eq(pop(eax), 'pop eax', '\x58')
+        eq(pop(dword[edx]), 'pop dword [edx]', '\x8f\x02')
+        eq(pop(dword[6]), 'pop dword [0x6]', '\x8f\x05\x06\x00\x00\x00')
+        eq(pop(ss), 'pop ss', '\x17')
+        eq(rol(ebx, 1), 'rol ebx, 0x1', '\xd1\xc3')
+        eq(rol(ebx, 2), 'rol ebx, 0x2', '\xc1\xc3\x02')
+        eq(rol(edx, cl), 'rol edx, cl', '\xd3\xc2')
+        eq(xor(edx, esi), 'xor edx, esi', '\x31\xf2')
+        eq(shl(esi, 4), 'shl esi, 0x4', '\xc1\xe6\x04')
 
     def test_block(self):
         eq = self.assertEqual
