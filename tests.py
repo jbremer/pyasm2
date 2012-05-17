@@ -185,6 +185,13 @@ class CheckSyntax(unittest.TestCase):
         eq(block(e_init, b, b, b, b, e_end), '\n'.join((e_init_s, b_s, b_s,
             b_s, b_s, e_end_s)), e_init_e + b_e * 4 + e_end_e)
 
+        # merging blocks with relative jumps
+        eq(block(d, d, d), 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\n' +
+            'jnz __lbl_0\nxor eax, eax\n__lbl_1:\ninc eax\ncmp eax, 0x10\n' +
+            'jnz __lbl_1\nxor eax, eax\n__lbl_2:\ninc eax\ncmp eax, 0x10\n' +
+            'jnz __lbl_2',
+            '\x31\xc0\x40\x83\xf8\x10\x0f\x85\xf6\xff\xff\xff' * 3)
+
     def test_optimization(self):
         eq = lambda i, s, b: (self.assertEqual(str(i), s,
             'Invalid string representation for: ' + str(i)),

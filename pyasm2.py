@@ -16,7 +16,7 @@ compilers etc.
 The syntax of pyasm2 is supposed to be as simple as possible.
 
 """
-import struct, types
+import struct, types, copy
 
 class Immediate:
     """Defines Immediates, has the ability to treat immediates as addresses."""
@@ -843,7 +843,10 @@ class Block:
 
         elif isinstance(other, Block):
             # we merge the `other' block with ours, by appending.
-            map(self.__iadd__, other.instructions)
+            # TODO deepcopy might get in a recursive loop somehow, if that
+            # ever occurs, implement a __deepcopy__ which only makes a new
+            # copy of Labels
+            map(self.__iadd__, map(copy.deepcopy, other.instructions))
 
         else:
             raise Exception('This object is not welcome here.')
