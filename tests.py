@@ -101,6 +101,10 @@ class CheckSyntax(unittest.TestCase):
         eq(lea(eax, [esp+eax*2+0x42]), 'lea eax, [esp+eax*2+0x42]',
             '\x8d\x44\x44\x42')
 
+        eq(mov(dword[ebx+0x44332211], 0x88776655),
+            'mov dword [ebx+0x44332211], 0x88776655', '\xc7\x83' + ''.join(
+            map(chr, range(0x11, 0x99, 0x11))))
+
         eq(movss(xmm6, xmm3), 'movss xmm6, xmm3', '\xf3\x0f\x10\xf3')
         eq(movd(xmm7, edi), 'movd xmm7, edi', '\x66\x0f\x6e\xff')
         eq(pand(xmm4, oword [ecx]), 'pand xmm4, oword [ecx]',
@@ -141,19 +145,28 @@ class CheckSyntax(unittest.TestCase):
         eq(movsx(eax, al), 'movsx eax, al', '\x0f\xbe\xc0')
 
     def test_block(self):
-        eq = self.assertEqual
+        eq = lambda i, s, b: (self.assertEqual(str(i), s,
+            'Invalid string representation for: ' + str(i)),
+            self.assertEqual(i.encode(), b, 'Invalid encoding for: ' +
+                str(i) + ' -> ' + repr(i.encode())))
 
-        eq(len(block(mov(eax, 1), mov(ebx, 1))), 10)
-        eq(str(block(mov(eax, 1), mov(ebx, 1))), 'mov eax, 0x1\nmov ebx, 0x1')
+        eq(block(mov(eax, 1), mov(ebx, 1)), 'mov eax, 0x1\nmov ebx, 0x1',
+            '\xb8\x01\x00\x00\x00\xbb\x01\x00\x00\x00')
+
         b = block(mov(eax, ebx))
         b += mov(ecx, edx)
-        eq((len(b), str(b)), (4, 'mov eax, ebx\nmov ecx, edx'))
+        eq(b, 'mov eax, ebx\nmov ecx, edx', '\x8b\xc3\x8b\xca')
 
         c = block(mov(esi, dword[eax]), scasb(rep=True))
-        eq((len(c), str(c)), (4, 'mov esi, dword [eax]\nrep scasb'))
+        eq(c, 'mov esi, dword [eax]\nrep scasb', '\x8b\x30\xf3\xae')
+
         b += c
-        eq((len(b), str(b)), (8, 'mov eax, ebx\nmov ecx, edx\n' +
-            'mov esi, dword [eax]\nrep scasb'))
+        eq(b, 'mov eax, ebx\nmov ecx, edx\nmov esi, dword [eax]\nrep scasb',
+            '\x8b\xc3\x8b\xca\x8b\x30\xf3\xae')
+
+        d = block(xor(eax, eax), lbl, inc(eax), cmp(eax, 0x10), jnz(-1))
+        eq(d, 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\njnz __lbl_0',
+            '\x31\xc0\x40\x83\xf8\x10\x0f\x85\xf6\xff\xff\xff')
 
     def test_optimization(self):
         eq = lambda i, s, b: (self.assertEqual(str(i), s,

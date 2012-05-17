@@ -808,7 +808,10 @@ class Block:
 
     def __str__(self):
         """Return a string representation of all instructions chained."""
-        return '\n'.join(map(str, self.instructions))
+        # convert an instruction into a string representation, labels need an
+        # additional semicolon
+        f = lambda x: str(x) if not isinstance(x, Label) else str(x) + ':'
+        return '\n'.join(map(f, self.instructions))
 
     def encode(self):
         """Return the Machine Code representation."""
