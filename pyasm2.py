@@ -816,6 +816,10 @@ class Block:
 
     def __iadd__(self, other):
         """self += other"""
+        # if a class object was given, we create an instance ourselves
+        if isinstance(other, types.ClassType):
+            other = other()
+
         if isinstance(other, Label):
             other.parent = self
             other.labelnr = len(self.labels)
