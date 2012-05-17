@@ -16,7 +16,7 @@ compilers etc.
 The syntax of pyasm2 is supposed to be as simple as possible.
 
 """
-import struct
+import struct, types
 
 class Immediate:
     """Defines Immediates, has the ability to treat immediates as addresses."""
@@ -293,7 +293,11 @@ class MemoryAddress:
         assert self.size is not None
 
         fmt = {8: 'B', 16: 'H', 32: 'I', 64: 'Q'}
-        return struct.pack(fmt[self.size], int(value))
+
+        # convert the value, if it's negative.
+        value = int(value) if int(value) >= 0 else int(value) + 2**self.size
+
+        return struct.pack(fmt[self.size], value)
 
 # define the size for the memory addresses
 byte = MemoryAddress(size=8)
@@ -777,18 +781,22 @@ class RelativeJump(Instruction):
 
     def encode(self):
         """Encode this Relative Jump."""
-        # TODO decent relative jump stuff
+        to = self.parent.labels[self.lbl.labelnr + self.lbl.index]
+
         if self._index_ is None:
-            return chr(self._opcode_) + dword.pack(0)
+            return chr(self._opcode_) + dword.pack(
+                to.offset - self.offset - 5)
         else:
-            return '\x0f' + chr(0x80 + self._index_) + dword.pack(0)
+            return '\x0f' + chr(0x80 + self._index_) + dword.pack(
+                to.offset - self.offset - 6)
 
 class Block:
-    __blocknr = 0
     def __init__(self, *args):
-        self.blocknr = self.__blocknr
-        self.__blocknr += 1
-        self.labelcnt = 0
+        # a list of local labels for this block
+        self.labels = []
+
+        # current length of all instructions combined
+        self.length = 0
 
         # add each instruction using our simple handler.
         self.instructions = []
@@ -796,7 +804,7 @@ class Block:
 
     def __len__(self):
         """Return the length of all instructions chained."""
-        return sum(map(len, self.instructions))
+        return self.length
 
     def __str__(self):
         """Return a string representation of all instructions chained."""
@@ -810,24 +818,29 @@ class Block:
         """self += other"""
         if isinstance(other, Label):
             other.parent = self
-            other.blocknr = self.blocknr
-            other.labelnr = self.labelcnt
-            self.labelcnt += 1
-            other.update()
+            other.labelnr = len(self.labels)
+            other.offset = self.length
+            self.labels.append(other)
             self.instructions.append(other)
+
         elif isinstance(other, RelativeJump):
-            other.lbl.parent = self
-            other.lbl.blocknr = self.blocknr
-            other.lbl.labelnr = self.labelcnt
-            self.labelcnt += 1
-            other.lbl.update()
+            other.parent = self
+            other.lbl.labelnr = len(self.labels)
+            other.offset = self.length
             self.instructions.append(other)
+            self.length += len(other)
+
         elif isinstance(other, Instruction):
             self.instructions.append(other)
+            self.length += len(other)
+
         elif isinstance(other, Block):
-            self.instructions.extend(other.instructions)
+            # we merge the `other' block with ours, by appending.
+            map(self.__iadd__, other.instructions)
+
         else:
             raise Exception('This object is not welcome here.')
+
         return self
 
 block = Block
@@ -845,13 +858,6 @@ class Label(Instruction):
         """
         self.index = index
 
-        print 'index', self.index
-
-    def update(self):
-        """Called by Block in order to get things straight."""
-        if self.index is not None:
-            self.index = self.labelnr + self.index
-
     def __len__(self):
         """Just in case, Labels don't have a size as Machine Code."""
         return 0
@@ -861,8 +867,8 @@ class Label(Instruction):
         return ''
 
     def __str__(self):
-        labelnr = self.index if self.index is not None else self.labelnr
-        return '__lbl_%d_%d' % (self.blocknr, labelnr)
+        return '__lbl_%d' % (self.labelnr + self.index if \
+            self.index is not None else self.labelnr)
 
 lbl = Label
 
