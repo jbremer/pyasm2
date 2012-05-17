@@ -161,12 +161,29 @@ class CheckSyntax(unittest.TestCase):
         eq(c, 'mov esi, dword [eax]\nrep scasb', '\x8b\x30\xf3\xae')
 
         b += c
-        eq(b, 'mov eax, ebx\nmov ecx, edx\nmov esi, dword [eax]\nrep scasb',
-            '\x8b\xc3\x8b\xca\x8b\x30\xf3\xae')
+        b_s = 'mov eax, ebx\nmov ecx, edx\nmov esi, dword [eax]\nrep scasb'
+        b_e = '\x8b\xc3\x8b\xca\x8b\x30\xf3\xae'
+        eq(b, b_s, b_e)
 
         d = block(xor(eax, eax), lbl, inc(eax), cmp(eax, 0x10), jnz(-1))
         eq(d, 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\njnz __lbl_0',
             '\x31\xc0\x40\x83\xf8\x10\x0f\x85\xf6\xff\xff\xff')
+
+        # blocks allow instructions / labels without actually creating an
+        # instance if that's not required, e.g. instructions that don't take
+        # any operators
+        eq(block(jmp(0), nop, lbl, retn), 'jmp __lbl_0\nnop\n__lbl_0:\nretn',
+            '\xe9\x01\x00\x00\x00\x90\xc3')
+
+        # partially unrolling a useless loop, to show "merging" of blocks.
+        e_init = block(xor(ebx, ebx), mov(ecx, 0x40))
+        e_init_s = 'xor ebx, ebx\nmov ecx, 0x40'
+        e_init_e = '\x31\xdb\xb9\x40\x00\x00\x00'
+        e_end = block(mov(eax, dword[esp+8]), retn)
+        e_end_s = 'mov eax, dword [esp+0x8]\nretn'
+        e_end_e = '\x8b\x44\x24\x08\xc3'
+        eq(block(e_init, b, b, b, b, e_end), '\n'.join((e_init_s, b_s, b_s,
+            b_s, b_s, e_end_s)), e_init_e + b_e * 4 + e_end_e)
 
     def test_optimization(self):
         eq = lambda i, s, b: (self.assertEqual(str(i), s,
