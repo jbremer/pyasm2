@@ -453,6 +453,7 @@ class Instruction:
     # we use a ctypes-like way to implement instructions.
     _opcode_ = None
     _enc_ = []
+    _name_ = None
 
     def __init__(self, operand1=None, operand2=None, operand3=None,
             lock=False, rep=False, repne=False):
@@ -685,7 +686,7 @@ class Instruction:
         if self.rep:
             s += 'rep '
 
-        s += self.__class__.__name__
+        s += self._name_ or self.__class__.__name__
         ops = filter(lambda x: x is not None, (self.op1, self.op2, self.op3))
         if len(ops):
             return s + ' ' + ', '.join(map(str, ops))
@@ -766,6 +767,7 @@ class Instruction:
 
 class RelativeJump(Instruction):
     _index_ = None
+    _name_ = None
 
     """Relative Jumps are somewhat special opcodes, they take labels."""
     def __init__(self, lbl):
@@ -777,7 +779,8 @@ class RelativeJump(Instruction):
         return 6 if self._index_ is not None else 5
 
     def __str__(self):
-        return self.__class__.__name__ + ' ' + str(self.lbl)
+        name = self._name_ or self.__class__.__name__
+        return name + ' ' + str(self.lbl)
 
     def encode(self):
         """Encode this Relative Jump."""
@@ -858,15 +861,18 @@ block = Block
 class Label(Instruction):
     """Labels allow Blocks to define relative jumps without knowing the exact
         offset beforehand."""
-    def __init__(self, index=None):
+    def __init__(self, index=None, prepend=True):
         """Initialize a new Label or point to an existing label.
 
         Initializing a Label object without any arguments creates an anonymous
         label, these can later be referenced by using an index, such as 1
         (the next label) or -1 (the last label.)
 
+        `prepend' indicates if `__lbl_' should be placed in front of the label.
+
         """
         self.index = index
+        self.prepend = prepend
 
     def __len__(self):
         """Just in case, Labels don't have a size as Machine Code."""
@@ -877,6 +883,8 @@ class Label(Instruction):
         return ''
 
     def __str__(self):
+        if isinstance(self.index, str):
+            return self.index if not self.prepend else '__lbl_%s' % self.index
         return '__lbl_%d' % (self.labelnr + self.index if \
             self.index is not None else self.labelnr)
 
@@ -1091,11 +1099,26 @@ class jle(RelativeJump):
 class jnle(RelativeJump):
     _index_ = 15
 
-class jmp(RelativeJump):
-    _opcode_ = 0xe9
+def _branch_instr(name, opcode, enc, arg):
+    if isinstance(arg, (int, long)):
+        arg = Label(int(arg))
+    elif isinstance(arg, str):
+        arg = Label(arg)
+    elif not isinstance(arg, Label):
+        i = Instruction(arg)
+        i._enc_ = enc
+        i._name_ = name
+        return i
+    r = RelativeJump(arg)
+    r._opcode_ = opcode
+    r._name_ = name
+    return r
 
-class call(RelativeJump):
-    _opcode_ = 0xe8
+def jmp(arg):
+    return _branch_instr('jmp', 0xe9, None, arg)
+
+def call(arg):
+    return _branch_instr('call', 0xe8, None, arg)
 
 _group_1_opcodes = lambda x: [
     (0x00+8*x, (byte, memgpr), (byte, gpr)),
@@ -1113,10 +1136,7 @@ class add(Instruction):
 
 class or_(Instruction):
     _enc_ = _group_1_opcodes(1)
-
-    def __init__(self, *args, **kwargs):
-        Instruction.__init__(self, *args, **kwargs)
-        self.__class__.__name__ = 'or'
+    _name_ = 'or'
 
 class adc(Instruction):
     _enc_ = _group_1_opcodes(2)
@@ -1126,10 +1146,7 @@ class sbb(Instruction):
 
 class and_(Instruction):
     _enc_ = _group_1_opcodes(4)
-
-    def __init__(self, *args, **kwargs):
-        Instruction.__init__(self, *args, **kwargs)
-        self.__class__.__name__ = 'and'
+    _name_ = 'and'
 
 class sub(Instruction):
     _enc_ = _group_1_opcodes(5)
@@ -1188,10 +1205,7 @@ _group_3_opcodes = lambda x: [
 
 class not_(Instruction):
     _enc_ = _group_3_opcodes(2)
-
-    def __init__(self, *args, **kwargs):
-        Instruction.__init__(self, *args, **kwargs)
-        self.__class__.__name__ = 'not'
+    _name_ = 'not'
 
 class neg(Instruction):
     _enc_ = _group_3_opcodes(3)
