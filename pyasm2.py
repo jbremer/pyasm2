@@ -886,6 +886,11 @@ class retn(Instruction):
     _opcode_ = 0xc3
     _enc_ = [(0xc2, (word, imm))]
 
+ret = retn
+
+class leave(Instruction):
+    _opcode_ = 0xc9
+
 class nop(Instruction):
     _opcode_ = 0x90
 
@@ -1106,8 +1111,12 @@ _group_1_opcodes = lambda x: [
 class add(Instruction):
     _enc_ = _group_1_opcodes(0)
 
-class _or(Instruction):
+class or_(Instruction):
     _enc_ = _group_1_opcodes(1)
+
+    def __init__(self, *args, **kwargs):
+        Instruction.__init__(self, *args, **kwargs)
+        self.__class__.__name__ = 'or'
 
 class adc(Instruction):
     _enc_ = _group_1_opcodes(2)
@@ -1115,8 +1124,12 @@ class adc(Instruction):
 class sbb(Instruction):
     _enc_ = _group_1_opcodes(3)
 
-class _and(Instruction):
+class and_(Instruction):
     _enc_ = _group_1_opcodes(4)
+
+    def __init__(self, *args, **kwargs):
+        Instruction.__init__(self, *args, **kwargs)
+        self.__class__.__name__ = 'and'
 
 class sub(Instruction):
     _enc_ = _group_1_opcodes(5)
@@ -1173,8 +1186,12 @@ _group_3_opcodes = lambda x: [
     (0xf6, (byte, memgpr, x)),
     (0xf7, (dword, memgpr, x))]
 
-class _not(Instruction):
+class not_(Instruction):
     _enc_ = _group_3_opcodes(2)
+
+    def __init__(self, *args, **kwargs):
+        Instruction.__init__(self, *args, **kwargs)
+        self.__class__.__name__ = 'not'
 
 class neg(Instruction):
     _enc_ = _group_3_opcodes(3)
