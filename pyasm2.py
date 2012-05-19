@@ -80,14 +80,17 @@ class MemoryAddress:
         # check if a register is valid..
         f = lambda x: x is None or isinstance(x, (GeneralPurposeRegister,
             XmmRegister))
-        assert size is None or size in (8, 16, 32, 64, 128)
+        assert size is None or size in (0, 8, 16, 32, 64, 128)
         assert segment is None or isinstance(segment, SegmentRegister)
         f(reg1)
         f(reg2)
         assert mult is None or mult in (1, 2, 4, 8)
+        # absolute value
+        if disp is not None and int(disp) < 0:
+            disp = int(disp) + 2**32
         assert disp is None or int(disp) >= 0 and int(disp) < 2**32
 
-        self.size = size
+        self.size = size or None
         self.segment = segment
         self.reg1 = reg1
         self.reg2 = reg2
@@ -456,7 +459,7 @@ class Instruction:
     _name_ = None
 
     def __init__(self, operand1=None, operand2=None, operand3=None,
-            lock=False, rep=False, repne=False):
+            lock=False, rep=False, repne=False, enc=None):
         """Initialize a new Instruction object."""
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
@@ -475,6 +478,10 @@ class Instruction:
         self.lock = lock
         self.rep = rep
         self.repne = repne
+
+        # enc was given as parameter
+        if enc:
+            self._enc_ = enc
 
         # clean operands, if needed
         self.clean()
@@ -509,7 +516,7 @@ class Instruction:
         # http://sandpile.org/x86/opc_rm.htm for the modrm byte, and
         # http://sandpile.org/x86/opc_rm.htm for the sib byte.
 
-        reg = op1.index
+        reg = op1.index if op1 else 0
 
         buf = ''
         sib = False
@@ -885,7 +892,7 @@ class Label(Instruction):
     def __str__(self):
         if isinstance(self.index, str):
             return self.index if not self.prepend else '__lbl_%s' % self.index
-        return '__lbl_%d' % (self.labelnr + self.index if \
+        return '__lbl_%08x' % (self.labelnr + self.index if \
             self.index is not None else self.labelnr)
 
 lbl = Label
@@ -988,6 +995,18 @@ class scasb(Instruction):
 class scasd(Instruction):
     _opcode_ = 0xaf
 
+class movsb(Instruction):
+    _opcode_ = 0xa4
+
+class movsd(Instruction):
+    _opcode_ = 0xa5
+
+class cmpsb(Instruction):
+    _opcode_ = 0xa6
+
+class cmpsd(Instruction):
+    _opcode_ = 0xa7
+
 class lea(Instruction):
     _enc_ = [(0x8d, (dword, gpr), (None, mem))]
 
@@ -1063,6 +1082,8 @@ class jb(RelativeJump):
 class jnb(RelativeJump):
     _index_ = 3
 
+jae = jnb
+
 class jz(RelativeJump):
     _index_ = 4
 
@@ -1074,6 +1095,8 @@ class jbe(RelativeJump):
 
 class jnbe(RelativeJump):
     _index_ = 7
+
+ja = jnbe
 
 class js(RelativeJump):
     _index_ = 8
@@ -1105,8 +1128,7 @@ def _branch_instr(name, opcode, enc, arg):
     elif isinstance(arg, str):
         arg = Label(arg)
     elif not isinstance(arg, Label):
-        i = Instruction(arg)
-        i._enc_ = enc
+        i = Instruction(arg, enc=enc)
         i._name_ = name
         return i
     r = RelativeJump(arg)
@@ -1115,10 +1137,10 @@ def _branch_instr(name, opcode, enc, arg):
     return r
 
 def jmp(arg):
-    return _branch_instr('jmp', 0xe9, None, arg)
+    return _branch_instr('jmp', 0xe9, [(0xff, (dword, memgpr, 6))], arg)
 
 def call(arg):
-    return _branch_instr('call', 0xe8, None, arg)
+    return _branch_instr('call', 0xe8, [(0xff, (dword, memgpr, 4))], arg)
 
 _group_1_opcodes = lambda x: [
     (0x00+8*x, (byte, memgpr), (byte, gpr)),
@@ -1221,3 +1243,15 @@ class div(Instruction):
 
 class idiv(Instruction):
     _enc_ = _group_3_opcodes(7)
+
+class pushf(Instruction):
+    _opcode_ = 0x9c
+
+class popf(Instruction):
+    _opcode_ = 0x9d
+
+class cpuid(Instruction):
+    _opcode_ = '\x0f\xa2'
+
+class fninit(Instruction):
+    _opcode_ = '\xdb\xe3'
