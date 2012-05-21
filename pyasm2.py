@@ -671,7 +671,8 @@ class Instruction:
                 return self._encoding
 
             # check if the third operand matches (can only be an Immediate)
-            if op3[1] != self.op3.__class__:
+            # also check if the sizes match..
+            if op3[1] != self.op3.__class__ or op3[0].size < self.op3.size:
                 continue
 
             # we found a matching encoding, return it.
@@ -693,11 +694,14 @@ class Instruction:
         if self.rep:
             s += 'rep '
 
-        s += self._name_ or self.__class__.__name__
+        s += self.mnemonic()
         ops = filter(lambda x: x is not None, (self.op1, self.op2, self.op3))
         if len(ops):
             return s + ' ' + ', '.join(map(str, ops))
         return s
+
+    def mnemonic(self):
+        return self._name_ or self.__class__.__name__
 
     def __len__(self):
         """Return the Length of the Machine Code."""
@@ -1236,7 +1240,10 @@ class mul(Instruction):
     _enc_ = _group_3_opcodes(4)
 
 class imul(Instruction):
-    _enc_ = _group_3_opcodes(5)
+    _enc_ = _group_3_opcodes(5) + [
+        ('\x0f\xaf', (dword, gpr), (dword, memgpr)),
+        (0x6b, (dword, gpr), (dword, gpr), (byte, imm)),
+        (0x69, (dword, gpr), (dword, gpr), (dword, imm))]
 
 class div(Instruction):
     _enc_ = _group_3_opcodes(6)
