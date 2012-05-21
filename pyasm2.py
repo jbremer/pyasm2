@@ -1062,6 +1062,12 @@ class movapd(Instruction):
         ('\x66\x0f\x29', (oword, memxmm), (oword, xmm)),
     ]
 
+class movups(Instruction):
+    _enc_ = [
+        ('\x0f\x10', (oword, xmm), (oword, memxmm)),
+        ('\x0f\x11', (oword, memxmm), (oword, xmm)),
+    ]
+
 class movd(Instruction):
     _enc_ = [
         ('\x66\x0f\x6e', (oword, xmm), (dword, memgpr)),
@@ -1119,6 +1125,8 @@ class jl(RelativeJump):
 
 class jnl(RelativeJump):
     _index_ = 13
+
+jge = jnl
 
 class jle(RelativeJump):
     _index_ = 14
