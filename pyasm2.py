@@ -41,7 +41,7 @@ class Immediate:
         return self.value != int(other)
 
     def __str__(self):
-        return '0x%x' % self.value
+        return '0x%08x' % self.value
 
 class SegmentRegister:
     """Defines the Segment Registers."""
@@ -204,6 +204,7 @@ class MemoryAddress:
         Memory Layout is as following (displacement has to be the lower 32 bits
         in the event that something like `dword [cs:0x401000]' is used.)
         32 bits - displacement
+        1  bit  - displacement is an address? (label)
         4  bits - reg1
         4  bits - reg2
         3  bits - mult
@@ -220,19 +221,21 @@ class MemoryAddress:
         f = lambda x: x.index + 1 if x is not None else 0
         return \
             (int(self.disp) if self.disp is not None else 0) + \
-            (f(self.reg1) << 32) + \
-            (f(self.reg2) << 36) + \
-            (mults[self.mult] << 40)
+            ((self.disp.addr if isinstance(self.disp, imm) else 0) << 32) + \
+            (f(self.reg1) << 33) + \
+            (f(self.reg2) << 37) + \
+            (mults[self.mult] << 41)
 
     def _decode_index(self, index):
         """Decodes a Memory Address encoded with __index__()."""
         mults = (None, 1, 2, 4, 8)
         # for decoding general purpose registers
         f = lambda x, y: y.register32[x-1] if x else None
-        return MemoryAddress(disp=index % 2**32 if index % 2**32 else None,
-            reg1=f((index >> 32) % 2**4, GeneralPurposeRegister),
-            reg2=f((index >> 36) % 2**4, GeneralPurposeRegister),
-            mult=mults[(index >> 40) % 2**3])
+        return MemoryAddress(disp=Immediate(index % 2**32, (index >> 32) % 2)
+                if index % 2**32 else None,
+            reg1=f((index >> 33) % 2**4, GeneralPurposeRegister),
+            reg2=f((index >> 37) % 2**4, GeneralPurposeRegister),
+            mult=mults[(index >> 41) % 2**3])
 
     def __getitem__(self, key):
         """Item or Slice to this MemoryAddress size.
@@ -271,6 +274,8 @@ class MemoryAddress:
             s += q if not len(s) else '+' + q
         if self.disp is not None:
             q = '0x%x' % int(self.disp)
+            if isinstance(self.disp, imm) and self.disp.addr:
+                q = '__lbl_%08x' % int(self.disp)
             s += q if not len(s) else '+' + q
         if self.size is not None:
             if self.segment is not None:
