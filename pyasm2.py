@@ -398,6 +398,11 @@ GeneralPurposeRegister.register32 = (eax, ecx, edx, ebx, esp, ebp, esi, edi)
 # creation of Instruction's
 gpr = GeneralPurposeRegister
 
+GeneralPurposeRegister.registers = {
+    8: gpr.register8,
+    16: gpr.register16,
+    32: gpr.register32}
+
 class XmmRegister:
     """Defines the Xmm Registers, registers used for the SSE instructions."""
     def __init__(self, index, name):
@@ -854,11 +859,11 @@ class Block:
             other.lbl.labelnr = len(self.labels)
             other.offset = self.length
             self.instructions.append(other)
-            self.length += len(other)
+            #self.length += len(other)
 
         elif isinstance(other, Instruction):
             self.instructions.append(other)
-            self.length += len(other)
+            #self.length += len(other)
 
         elif isinstance(other, Block):
             # we merge the `other' block with ours, by appending.
@@ -929,6 +934,9 @@ class mov(Instruction):
         (0x8a, (byte, gpr), (byte, memgpr)),
         (0xc6, (byte, memgpr, 0), (byte, imm)),
         (0xc7, (dword, memgpr, 0), (dword, imm)),
+        # dirty hack to support 16bit for these particular instructions...
+        ('\x66\x8b', (word, gpr), (word, memgpr)),
+        ('\x66\x89', (word, memgpr), (word, gpr)),
     ]
 
 class movzx(Instruction):
