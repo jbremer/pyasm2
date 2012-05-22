@@ -41,7 +41,8 @@ class Immediate:
         return self.value != int(other)
 
     def __str__(self):
-        return '0x%08x' % self.value
+        value = '%08x' % self.value
+        return '__lbl_' + value if self.addr else '0x' + value
 
 class SegmentRegister:
     """Defines the Segment Registers."""
