@@ -1180,7 +1180,8 @@ _group_1_opcodes = lambda x: [
     (0x81, (dword, memgpr, x), (dword, imm))]
 
 class add(Instruction):
-    _enc_ = _group_1_opcodes(0)
+    _enc_ = _group_1_opcodes(0) + [
+        (0, (word, gpr), (word, imm))]
 
 class or_(Instruction):
     _enc_ = _group_1_opcodes(1)
@@ -1284,3 +1285,18 @@ class cpuid(Instruction):
 
 class fninit(Instruction):
     _opcode_ = '\xdb\xe3'
+
+class pslld(Instruction):
+    _enc_ = [(0, (oword, xmm), (byte, imm))]
+
+class cvtdq2pd(Instruction):
+    _enc_ = [(0, (oword, xmm), (oword, memxmm))]
+
+class divpd(Instruction):
+    _enc_ = [(0, (oword, xmm), (oword, memxmm))]
+
+class subpd(Instruction):
+    _enc_ = [(0, (oword, xmm), (oword, memxmm))]
+
+class cvttpd2dq(Instruction):
+    _enc_ = [(0, (oword, xmm), (oword, memxmm))]
