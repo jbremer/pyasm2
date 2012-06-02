@@ -22,9 +22,9 @@ class CheckSyntax(unittest.TestCase):
         ra(AssertionError, lambda: esp*8)
         eq(0xb00b+ebp*8+ebx, ebx+ebp*8+0xb00b)
         ra(AssertionError, lambda: eax+0x111223344)
-        eq(str(dword[cs:eax+ebx]), 'dword [cs:eax+ebx]')
+        #eq(str(dword[cs:eax+ebx]), 'dword [cs:eax+ebx]')
         eq(dword[cs:0x13371337], dword[cs:0x13371337])
-        eq(str(dword[cs:0xdeadf00d]), 'dword [cs:0xdeadf00d]')
+        #eq(str(dword[cs:0xdeadf00d]), 'dword [cs:0xdeadf00d]')
         eq(dword[eax-0x1000], dword[eax+0xfffff000])
 
     def test_modrm(self):
