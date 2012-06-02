@@ -12,3 +12,21 @@ instructions from there, this approach is very useful when making JIT
 compilers etc.
 
 The syntax of pyasm2 is supposed to be as simple as possible.
+
+For example, an instruction such as "mov eax, dword [ebx+edx*2+32]" can be
+encoded using pyasm2 as the following.
+```python
+mov(eax, dword [ebx+edx*2+32])
+```
+
+These memory addresses also support segment registers, e.g.
+```python
+mov(eax, dword[fs:0xc0])
+```
+although this is currently only works when using a 64bit python version.
+
+Furthermore, pyasm2 makes it possible to chain multiple instructions. Take for
+example the following statement.
+```python
+block(mov(eax, ebx), push(32))
+```
