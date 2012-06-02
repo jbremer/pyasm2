@@ -1154,8 +1154,9 @@ class sub(Instruction):
 class xor(Instruction):
     _enc_ = _group_1_opcodes(6)
 
-class cmp(Instruction):
+class cmp_(Instruction):
     _enc_ = _group_1_opcodes(7)
+    _name_ = 'cmp'
 
 class test(Instruction):
     _enc_ = [

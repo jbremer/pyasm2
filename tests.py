@@ -113,9 +113,9 @@ class CheckSyntax(unittest.TestCase):
             '\x66\x0f\x28\x33')
 
         eq(add(byte[eax], 0x42), 'add byte [eax], 0x42', '\x80\x00\x42')
-        eq(cmp(dword[esp+ecx*8+0x0c], 0x42),
+        eq(cmp_(dword[esp+ecx*8+0x0c], 0x42),
             'cmp dword [esp+ecx*8+0xc], 0x42', '\x83\x7c\xcc\x0c\x42')
-        eq(cmp(byte[ebx], 0x13), 'cmp byte [ebx], 0x13', '\x80\x3b\x13')
+        eq(cmp_(byte[ebx], 0x13), 'cmp byte [ebx], 0x13', '\x80\x3b\x13')
         eq(mov(byte[ecx], 0x37), 'mov byte [ecx], 0x37', '\xc6\x01\x37')
         eq(add(eax, 1), 'add eax, 0x1', '\x83\xc0\x01')
         eq(mov(bl, 1), 'mov bl, 0x1', '\xb3\x01')
@@ -165,7 +165,7 @@ class CheckSyntax(unittest.TestCase):
         b_e = '\x8b\xc3\x8b\xca\x8b\x30\xf3\xae'
         eq(b, b_s, b_e)
 
-        d = block(xor(eax, eax), lbl, inc(eax), cmp(eax, 0x10), jnz(-1))
+        d = block(xor(eax, eax), lbl, inc(eax), cmp_(eax, 0x10), jnz(-1))
         eq(d, 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\njnz __lbl_0',
             '\x31\xc0\x40\x83\xf8\x10\x0f\x85\xf6\xff\xff\xff')
 
