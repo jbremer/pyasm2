@@ -1033,6 +1033,12 @@ class movaps(Instruction):
         ('\x0f\x29', (oword, memxmm), (oword, xmm)),
     ]
 
+class movups(Instruction):
+    _enc_ = [
+        ('\x0f\x10', (oword, xmm), (oword, memxmm)),
+        ('\x0f\x11', (oword, memxmm), (oword, xmm)),
+    ]
+
 class movapd(Instruction):
     _enc_ = [
         ('\x66\x0f\x28', (oword, xmm), (oword, memxmm)),
@@ -1063,6 +1069,8 @@ class jb(RelativeJump):
 class jnb(RelativeJump):
     _index_ = 3
 
+jae = jnb
+
 class jz(RelativeJump):
     _index_ = 4
 
@@ -1074,6 +1082,8 @@ class jbe(RelativeJump):
 
 class jnbe(RelativeJump):
     _index_ = 7
+
+ja = jnbe
 
 class js(RelativeJump):
     _index_ = 8
@@ -1092,6 +1102,8 @@ class jl(RelativeJump):
 
 class jnl(RelativeJump):
     _index_ = 13
+
+jge = jnl
 
 class jle(RelativeJump):
     _index_ = 14
@@ -1215,10 +1227,41 @@ class mul(Instruction):
     _enc_ = _group_3_opcodes(4)
 
 class imul(Instruction):
-    _enc_ = _group_3_opcodes(5)
+    _enc_ = _group_3_opcodes(5) + [
+        ('\x0f\xaf', (dword, gpr), (dword, memgpr)),
+        (0x6b, (dword, gpr), (dword, memgpr), (byte, imm)),
+        (0x69, (dword, gpr), (dword, memgpr), (dword, imm))
+    ]
 
 class div(Instruction):
     _enc_ = _group_3_opcodes(6)
 
 class idiv(Instruction):
     _enc_ = _group_3_opcodes(7)
+
+class movsb(Instruction):
+    _opcode_ = 0xa4
+
+class movsd(Instruction):
+    _opcode_ = 0xa5
+
+class cmpsb(Instruction):
+    _opcode_ = 0xa6
+
+class cmpsd(Instruction):
+    _opcode_ = 0xa7
+
+class pushf(Instruction):
+    _opcode_ = 0x9c
+
+class popf(Instruction):
+    _opcode_ = 0x9d
+
+class cpuid(Instruction):
+    _opcode_ = '\x0f\xa2'
+
+class sysenter(Instruction):
+    _opcode_ = '\x0f\x34'
+
+class fninit(Instruction):
+    _opcode_ = '\xdb\xe3'
