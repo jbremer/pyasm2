@@ -3,30 +3,19 @@
 
 ## Introduction
 
-_pyasm2_ is an x86 assembler library. It allows an easy intel-like assembly
+_pyasm2_ is an x86 assembler library. It allows an easy Intel-like assembly
 syntax, with support for sequences of instructions, as well as labels.
 
 ## Simple Usage
 
 To show the simplicity of the pyasm2 syntax, here are some examples. For each
-example the normal intel-syntax is given, followed by the equivalent using
+example the normal Intel-syntax is given, followed by the equivalent using
 pyasm2.
 
-*   push eax
-
-    `push(eax)`
-
-*   mov eax, ebx
-
-    `mov(eax, ebx)`
-
-*   lea edx, [ebp+eax*4+32]
-
-    `lea(edx, [ebp+eax*4+32])`
-
-*   movzx ebx, byte [esp-64]
-
-    `movzx(ebx, byte [esp-64])`
+* `push eax` &rarr; **`push(eax)`**
+* `mov eax, ebx` &rarr; **`mov(eax, ebx)`**
+* `lea edx, [ebp+eax*4+32]` &rarr; **`lea(edx, [ebp+eax*4+32])`**
+* `movzx ebx, byte [esp-64]` &rarr; **`movzx(ebx, byte [esp-64])`**
 
 Note that pyasm2 throws an exception if the instruction doesn't support the
 given operands (an operand is like a parameter to an instruction.)
