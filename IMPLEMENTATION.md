@@ -156,8 +156,10 @@ Block(
 
 #### Tweaked Anonymous Label References
 
-Because `jmp(L(-1))` looks pretty ugly (see the *Alias Label to L* section),
+Because `jmp(L(-1))` looks pretty ugly (see the [Alias Label to L][] section),
 we've tweaked anonymous label references even further, to the following.
+
+[Alias Label to L]: #alias-label-to-l
 
 ```python
 Block(
