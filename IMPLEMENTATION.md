@@ -16,7 +16,7 @@ pyasm2.
 * `mov eax, ebx` &rarr; **`mov(eax, ebx)`**
 * `lea edx, [ebp+eax*4+32]` &rarr; **`lea(edx, [ebp+eax*4+32])`**
 * `movzx ebx, byte [esp-64]` &rarr; **`movzx(ebx, byte [esp-64])`**
-* `mov eax, fs:[0xc0]` &rarr; **`mov eax, [fs:0xc0]`**
+* `mov eax, dword fs:[0xc0]` &rarr; **`mov eax, dword [fs:0xc0]`**
 
 Note that pyasm2 throws an exception if the instruction doesn't support the
 given operands (an operand is like a parameter to an instruction.)
@@ -63,13 +63,18 @@ Block(
 )
 ```
 
+It is, however, not possible to reference to labels outside of the current
+block.
+
+Throughout the following sections we will refer to this snippet, by rewriting
+a little bit everytime.
+
 #### Global Named Labels
 
 A new named label can be created by creating a new Label instance with the
 name as first parameter. Referencing a named label is just like referencing
 an anonymous label, but instead of passing an index, you give a string as
-parameter. For example, rewriting the anonymous label example to use global
-named labels, results in the following snippet.
+parameter.
 
 ```python
 Block(
@@ -89,9 +94,35 @@ global named labels!)
 Whereas one could make a global named label using e.g. `Label('name')`, it is
 also possible to make a *local* named label; a label that's only defined for
 the current block. Because local labels are more commonly used than global
-labels, there syntax is easier as well. Local named labels are simply created
-and referenced by using a string as name, tweaking the Global Named Labels
-example to use a Local Named Label results in the following.
+labels, their syntax is easier as well. Local named labels are simply created
+by using a string as name.
+
+```python
+Block(
+    'loop',
+    inc(eax),
+    jmp(Label('loop'))
+)
+```
+
+#### Label References
+
+Labels are referenced by e.g. `Label('name')`. When looking up label
+references, pyasm2 will first try to find the label in the current block,
+and only if there is no such label in the current block, it will look it up
+in the parent. In other words, local named labels are more important than
+global named labels.
+
+### Further Label Tweaks
+
+Now we've seen the types of labels supported by pyasm2, it is time to get to
+some awesome tweaks which will speed up development and clean up your code
+even further.
+
+#### Simple Named Label References
+
+It is possible to reference a label simply by the name as string, rather than
+e.g. `Label('name')`.
 
 ```python
 Block(
@@ -101,17 +132,10 @@ Block(
 )
 ```
 
-### Further Label Tweaks
-
-Now we've seen the types of labels supported by pyasm2, it is time to get to
-some awesome tweaks which will speed up development and clean up your code
-even further.
-
 #### Label classobj instead of instance
 
 It is possible to define an Anonymous Label by passing the Label class,
-instead of passing an instance. Rewriting the Anonymous Label example using
-this tweak results in the following snippet.
+instead of passing an instance.
 
 ```python
 Block(
@@ -125,8 +149,7 @@ Block(
 
 Because global named labels are able to reference to labels outside their
 current scope (a block), it is also possible to reference to them as a
-variabele (e.g. a function.) The following example says more than a 1000
-words.
+variabele (e.g. a function.)
 
 ```python
 return_zero = Label('return_zero')
@@ -143,8 +166,7 @@ f2 = Block(
 #### Alias Label to L
 
 For those of us that think that the classname *Label* is too long, you could
-simply make an alias to **L** (i.e. `L = Label`.) Rewriting the anonymous
-labels snippet using this alias results in the following.
+simply make an alias to **L** (i.e. `L = Label`.)
 
 ```python
 Block(
@@ -157,7 +179,8 @@ Block(
 #### Tweaked Anonymous Label References
 
 Because `jmp(L(-1))` looks pretty ugly (see the [Alias Label to L][] section),
-we've tweaked anonymous label references even further, to the following.
+we've tweaked anonymous label references even further to the point where you
+can add or subtract a relative index to the `Label` class.
 
 [Alias Label to L]: #alias-label-to-l
 
@@ -168,6 +191,3 @@ Block(
     jmp(L-1)
 )
 ```
-
-As you can see it is now possible to add or subtract the relative index from
-the Label class directly.
