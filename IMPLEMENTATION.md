@@ -191,3 +191,33 @@ Block(
     jmp(L-1)
 )
 ```
+
+## Blocks part two
+
+Now we've seen how pyasm2 handles labels, it's time for some more in-depth
+information about blocks.
+
+#### Instruction classobj instead of instance
+
+Any instruction that does *not* take any additional operands (e.g. `retn`,
+`stosb`, `sysenter`, etc.) can be used directly in a block without actually
+making an instance. For example, the following two snippets are equal to
+pyasm2.
+
+```python
+Block(
+    mov(eax, 0),
+    retn()
+)
+```
+```python
+Block(
+    mov(eax, 0)
+    retn
+)
+```
+
+#### Combining Blocks
+
+One can combine multiple blocks by *adding* one to the other. Combining blocks
+is actually just merging them, e.g. one block is appended to the other block.
