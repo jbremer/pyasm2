@@ -63,11 +63,11 @@ Block(
 )
 ```
 
-It is, however, not possible to reference to labels outside of the current
-block.
+It is, however, not possible to reference to anonymous labels outside of the
+current block (i.e. an IndexError is thrown.)
 
 Throughout the following sections we will refer to this snippet, by rewriting
-a little bit everytime.
+it a little bit every time.
 
 #### Global Named Labels
 
@@ -180,7 +180,7 @@ Block(
 
 Because `jmp(L(-1))` looks pretty ugly (see the [Alias Label to L][] section),
 we've tweaked anonymous label references even further to the point where you
-can add or subtract a relative index to the `Label` class.
+can add or subtract a relative index directly to/from the `Label` class.
 
 [Alias Label to L]: #alias-label-to-l
 
