@@ -16,10 +16,22 @@ pyasm2.
 * `mov eax, ebx` &rarr; **`mov(eax, ebx)`**
 * `lea edx, [ebp+eax*4+32]` &rarr; **`lea(edx, [ebp+eax*4+32])`**
 * `movzx ebx, byte [esp-64]` &rarr; **`movzx(ebx, byte [esp-64])`**
-* `mov eax, dword fs:[0xc0]` &rarr; **`mov eax, dword [fs:0xc0]`**
+* `mov eax, dword fs:[0xc0]` &rarr; **`mov(eax, dword [fs:0xc0])`**
 
 Note that pyasm2 throws an exception if the instruction doesn't support the
 given operands (an operand is like a parameter to an instruction.)
+
+A few simple command-line examples.
+```python
+>>> from pyasm2 import *
+>>> mov(eax, dword[ebx+0x100])
+mov eax, dword [ebx+0x100]
+>>> push(dword[esp])
+push dword [esp]
+>>> mov(eax, eax, eax) # invalid encoding
+... snip ...
+Exception: Unknown or Invalid Encoding
+```
 
 ## Blocks
 
