@@ -78,6 +78,15 @@ Block(
 It is, however, not possible to reference to anonymous labels outside of the
 current block (i.e. an IndexError is thrown.)
 
+There are three different possible values for relative indices.
+
+* *Negative Index* &rarr; Points to an anonymous label before the current
+    instruction.
+* *Zero Index* &rarr; Points to a transparant label which points to the
+    current instruction.
+* *Positive Index* &rarr; Points to an anonymous label after the current
+    instruction.
+
 Throughout the following sections we will refer to this snippet, by rewriting
 it a little bit every time.
 
