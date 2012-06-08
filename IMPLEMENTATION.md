@@ -224,7 +224,7 @@ Block(
 ```
 ```python
 Block(
-    mov(eax, 0)
+    mov(eax, 0),
     retn
 )
 ```
@@ -233,3 +233,37 @@ Block(
 
 One can combine multiple blocks by *adding* one to the other. Combining blocks
 is actually just merging them, e.g. one block is appended to the other block.
+
+```python
+a = Block(
+    mov(eax, ebx),
+    mov(ebx, 42)
+)
+b = Block(
+    mov(ecx, edx)
+)
+print a + b
+# Block(mov(eax, ebx), mov(ebx, 42), mov(ecx, edx))
+```
+
+#### Temporary Blocks as Lists
+
+Temporary blocks, those that you only use to add to other blocks, can be
+written as lists (or tuples, for that matter.)
+
+```python
+a = Block(
+    mov(eax, ebx),
+    mov(ebx, 42)
+)
+print a + [xor(ecx, ecx), retn]
+```
+
+This does, however, not work if you want to call *repr* or *str* on the block.
+In that particular case, you can do the following.
+
+```python
+a = [xor(eax, eax), retn]
+print repr(Block(a))
+# Block(xor(eax, eax), retn)
+```
