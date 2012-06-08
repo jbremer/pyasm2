@@ -12,11 +12,11 @@ Here are some examples to illustrate the simplicity of pyasm2. For each
 example the normal Intel-syntax is given, followed by the equivalent using
 pyasm2.
 
-* `push eax` &rarr; **`push(eax)`**
-* `mov eax, ebx` &rarr; **`mov(eax, ebx)`**
-* `lea edx, [ebp+eax*4+32]` &rarr; **`lea(edx, [ebp+eax*4+32])`**
-* `movzx ebx, byte [esp-64]` &rarr; **`movzx(ebx, byte [esp-64])`**
-* `mov eax, dword fs:[0xc0]` &rarr; **`mov(eax, dword [fs:0xc0])`**
+*   `push eax` &rarr; **`push(eax)`**
+*   `mov eax, ebx` &rarr; **`mov(eax, ebx)`**
+*   `lea edx, [ebp+eax*4+32]` &rarr; **`lea(edx, [ebp+eax*4+32])`**
+*   `movzx ebx, byte [esp-64]` &rarr; **`movzx(ebx, byte [esp-64])`**
+*   `mov eax, dword fs:[0xc0]` &rarr; **`mov(eax, dword [fs:0xc0])`**
 
 Note that pyasm2 throws an exception if the instruction doesn't support the
 given operands (an operand is like a parameter to an instruction.)
@@ -80,11 +80,11 @@ current block (i.e. an IndexError is thrown.)
 
 There are three different possible values for relative indices.
 
-* *Negative Index* &rarr; Points to an anonymous label before the current
+*   *Negative Index* &rarr; Points to an anonymous label before the current
     instruction.
-* *Zero Index* &rarr; Points to a transparant label which points to the
+*   *Zero Index* &rarr; Points to a transparant label which points to the
     current instruction.
-* *Positive Index* &rarr; Points to an anonymous label after the current
+*   *Positive Index* &rarr; Points to an anonymous label after the current
     instruction.
 
 (This does indeed mean that relative index *1* points to the first label
