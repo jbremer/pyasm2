@@ -242,7 +242,7 @@ a = Block(
 b = Block(
     mov(ecx, edx)
 )
-print a + b
+print repr(a + b)
 # Block(mov(eax, ebx), mov(ebx, 42), mov(ecx, edx))
 ```
 
@@ -256,7 +256,8 @@ a = Block(
     mov(eax, ebx),
     mov(ebx, 42)
 )
-print a + [xor(ecx, ecx), retn]
+print repr(a + [xor(ecx, ecx), retn])
+# Block(mov(eax, ebx), mov(ebx, 42), xor(ecx, ecx), retn)
 ```
 
 This does, however, not work if you want to call *repr* or *str* on the block.
