@@ -87,6 +87,9 @@ There are three different possible values for relative indices.
 * *Positive Index* &rarr; Points to an anonymous label after the current
     instruction.
 
+(This does indeed mean that relative index *1* points to the first label
+after the current instruction.)
+
 Throughout the following sections we will refer to this snippet, by rewriting
 it a little bit every time.
 
