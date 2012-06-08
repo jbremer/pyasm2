@@ -216,6 +216,26 @@ Block(
 )
 ```
 
+#### Offset from a Label
+
+Sometimes it might be necessary to add or subtract a value from the address of
+a label, in those cases the following technique applies.
+
+```python
+Block(
+    L,
+    nop,
+    mov(eax, Label(-1)+1)
+)
+```
+
+In this example the anonymous label will be referenced, but the value one is
+added to it. So `Label(-1)+1` points to the `mov` instruction, because the
+`nop` instruction is only one byte in length.
+
+Do note that `Label(-1)+1` could be rewritten as `L-1+1`, but *please* don't
+do that, we don't want to torture python.
+
 ## Blocks part two
 
 Now we've seen how pyasm2 handles labels, it's time for some more in-depth
