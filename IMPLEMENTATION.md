@@ -280,3 +280,41 @@ a = [xor(eax, eax), retn]
 print repr(Block(a))
 # Block(xor(eax, eax), retn)
 ```
+
+## pyasm2 Internals
+
+Although most of pyasm2 is fairly straightforward (chaining instructions is
+not that hard), there is one tricky part: **labels**.
+
+To start off, the x86 instruction set provides two types of relative jumps.
+Those with an 8bit relative offset, and those with a 32bit relative offset.
+
+Besides that, instructions can refer to other instructions or addresses within
+a data section, using labels. This means that pyasm2 has to keep track of
+these references, and magically fix them in the final step.
+
+#### Relative Offset Size
+
+So a relative jump can point to another instruction, by using a label. This
+raises the question; is the offset to this instruction within the size of an
+8bit relative offset, or a 32bit one?
+
+(8bit relative jumps are 2 bytes in length, 32bit ones are 5 bytes for
+unconditional jumps, and 6 bytes for conditional ones.)
+
+There are two solutions to this problem, as far as I can tell.
+
+*   Each label keeps a list of instructions pointing to it. When assembling,
+    each of the instructions is updated with the location of the label, so the
+    instructions can assemble the address or relative offset accordingly.
+    From here the instruction can determine if the offset has to be 8bit or
+    32bit.
+*   At first each relative jump is created using a 32bit relative offset.
+    Then, after assembling each instruction, the instructions are enumarated
+    and a check is done if the relative jumps would fit as jumps with an 8bit
+    relative offset as well. If that is the case, the jump is updated, and all
+    the other instructions are updated as well. This goes one until there are
+    no relative jumps left to tweak, or a recursive limit has exceeded.
+
+Although the first implementation might be a little better, performance wise.
+pyasm2 uses the latter implementation, which is much easier to implement.
