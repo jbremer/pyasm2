@@ -178,6 +178,7 @@ variabele (e.g. a function.)
 ```python
 return_zero = Label('return_zero')
 f = Block(
+    return_zero,
     xor(eax, eax),
     retn()
 )
