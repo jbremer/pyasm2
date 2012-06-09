@@ -781,7 +781,8 @@ class RelativeJump:
         """
         to = self.value
         if isinstance(self.value, Label):
-            to = labels[self.value.index + self.value.base]
+            index = self.value.index + self.value.base
+            to = labels[index - (self.value.index > 0)]
 
         if self._index_ is None:
             return chr(self._opcode_) + dword.pack(to - offset - 5)
@@ -863,7 +864,8 @@ class Block:
                 offset += len(instr)
 
             elif isinstance(instr, RelativeJump):
-                offset += 6
+                # 5 for unconditional jumps, 6 for conditional jumps
+                offset += 5 + (instr._index_ is not None)
 
                 # is this a label?
                 if isinstance(instr.value, Label):
@@ -960,7 +962,13 @@ class Label:
         self.base = 0
 
     def __repr__(self):
-        return '__lbl_%s' % (self.index + self.base)
+        index = self.index + self.base
+
+        # as we have to include Label(0) possibilities
+        if self.index > 0:
+            index -= 1
+
+        return '__lbl_%s' % index
 
 lbl = Label
 

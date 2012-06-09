@@ -177,8 +177,13 @@ class CheckSyntax(unittest.TestCase):
         # blocks allow instructions / labels without actually creating an
         # instance if that's not required, e.g. instructions that don't take
         # any operators
-        #eq(block(jmp(0), nop, lbl, retn), 'jmp __lbl_0\nnop\n__lbl_0:\nretn',
-        #    '\xe9\x01\x00\x00\x00\x90\xc3')
+        eq2(block(jmp(lbl(1)), nop, lbl, retn),
+            'jmp __lbl_0\nnop\n__lbl_0:\nretn\n',
+            '\xe9\x01\x00\x00\x00\x90\xc3')
+
+        # simulation of jmp(lbl(0))
+        eq2(block(lbl, jmp(lbl(-1))), '__lbl_0:\njmp __lbl_0\n',
+            '\xe9\xfb\xff\xff\xff')
 
         # partially unrolling a useless loop, to show "merging" of blocks.
         e_init = block(xor(ebx, ebx), mov(ecx, 0x40))
