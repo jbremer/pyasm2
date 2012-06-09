@@ -150,24 +150,29 @@ class CheckSyntax(unittest.TestCase):
             self.assertEqual(str(i), b, 'Invalid encoding for: ' +
                 str(i) + ' -> ' + repr(str(i))))
 
-        eq(block(mov(eax, 1), mov(ebx, 1)), 'mov eax, 0x1\nmov ebx, 0x1',
+        eq2 = lambda i, s, b: (self.assertEqual(repr(i), s,
+            'Invalid string representation for: ' + repr(i)),
+            self.assertEqual(i.assemble(), b, 'Invalid encoding for: ' +
+                repr(b) + ' -> ' + repr(i.assemble())))
+
+        eq(block(mov(eax, 1), mov(ebx, 1)), 'mov eax, 0x1\nmov ebx, 0x1\n',
             '\xb8\x01\x00\x00\x00\xbb\x01\x00\x00\x00')
 
         b = block(mov(eax, ebx))
         b += mov(ecx, edx)
-        eq(b, 'mov eax, ebx\nmov ecx, edx', '\x8b\xc3\x8b\xca')
+        eq(b, 'mov eax, ebx\nmov ecx, edx\n', '\x8b\xc3\x8b\xca')
 
         c = block(mov(esi, dword[eax]), scasb(rep=True))
-        eq(c, 'mov esi, dword [eax]\nrep scasb', '\x8b\x30\xf3\xae')
+        eq(c, 'mov esi, dword [eax]\nrep scasb\n', '\x8b\x30\xf3\xae')
 
         b += c
-        b_s = 'mov eax, ebx\nmov ecx, edx\nmov esi, dword [eax]\nrep scasb'
+        b_s = 'mov eax, ebx\nmov ecx, edx\nmov esi, dword [eax]\nrep scasb\n'
         b_e = '\x8b\xc3\x8b\xca\x8b\x30\xf3\xae'
         eq(b, b_s, b_e)
 
-        #d = block(xor(eax, eax), lbl, inc(eax), cmp_(eax, 0x10), jnz(lbl(-1)))
-        #eq(d, 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\njnz __lbl_0',
-        #    '\x31\xc0\x40\x83\xf8\x10\x0f\x85\xf6\xff\xff\xff')
+        d = block(xor(eax, eax), lbl, inc(eax), cmp_(eax, 0x10), jnz(lbl(-1)))
+        eq2(d, 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\njnz __lbl_0\n',
+            '\x31\xc0\x40\x83\xf8\x10\x0f\x85\xf6\xff\xff\xff')
 
         # blocks allow instructions / labels without actually creating an
         # instance if that's not required, e.g. instructions that don't take
@@ -177,13 +182,18 @@ class CheckSyntax(unittest.TestCase):
 
         # partially unrolling a useless loop, to show "merging" of blocks.
         e_init = block(xor(ebx, ebx), mov(ecx, 0x40))
-        e_init_s = 'xor ebx, ebx\nmov ecx, 0x40'
+        e_init_s = 'xor ebx, ebx\nmov ecx, 0x40\n'
         e_init_e = '\x31\xdb\xb9\x40\x00\x00\x00'
+        eq2(e_init, e_init_s, e_init_e)
+        eq2(block(e_init), e_init_s, e_init_e)
+
         e_end = block(mov(eax, dword[esp+8]), retn)
-        e_end_s = 'mov eax, dword [esp+0x8]\nretn'
+        e_end_s = 'mov eax, dword [esp+0x8]\nretn\n'
         e_end_e = '\x8b\x44\x24\x08\xc3'
-        eq(block(e_init, b, b, b, b, e_end), '\n'.join((e_init_s, b_s, b_s,
-            b_s, b_s, e_end_s)), e_init_e + b_e * 4 + e_end_e)
+        eq2(e_end, e_end_s, e_end_e)
+
+        eq2(block(e_init, b, b, b, b, e_end), e_init_s + b_s * 4 + e_end_s,
+            e_init_e + b_e * 4 + e_end_e)
 
         # merging blocks with relative jumps
         #eq(block(d, d, d), 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\n' +
