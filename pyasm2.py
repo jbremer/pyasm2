@@ -673,7 +673,7 @@ class Instruction:
 
         raise Exception('Unknown or Invalid Encoding')
 
-    def __str__(self):
+    def __repr__(self):
         """Representation of this Instruction."""
         s = ''
 
@@ -694,9 +694,9 @@ class Instruction:
 
     def __len__(self):
         """Return the Length of the Machine Code."""
-        return len(self.encode())
+        return self.__str__().__len__()
 
-    def encode(self):
+    def __str__(self):
         """Encode this Instruction into its machine code representation."""
         # cache the generated machine code, because i'm too lazy to make a
         # good implementation of __len__().
@@ -770,19 +770,19 @@ class RelativeJump(Instruction):
     _name_ = None
 
     """Relative Jumps are somewhat special opcodes, they take labels."""
-    def __init__(self, lbl):
-        self.lbl = lbl if isinstance(lbl, Label) else Label(lbl)
+    def __init__(self, val):
+        self.value = Immediate(val) if isinstance(val, (int, long)) else val
 
     def __len__(self):
         """For the sake of simplicity, we return a relative jmp with 32bit
             relative address."""
         return 6 if self._index_ is not None else 5
 
-    def __str__(self):
+    def __repr__(self):
         name = self._name_ or self.__class__.__name__
-        return name + ' ' + str(self.lbl)
+        return name + ' ' + repr(self.value)
 
-    def encode(self):
+    def __str__(self):
         """Encode this Relative Jump."""
         to = self.parent.labels[self.lbl.labelnr + self.lbl.index]
 
@@ -793,68 +793,66 @@ class RelativeJump(Instruction):
             return '\x0f' + chr(0x80 + self._index_) + dword.pack(
                 to.offset - self.offset - 6)
 
-class Block:
+class Block(list):
     def __init__(self, *args):
-        # a list of local labels for this block
-        self.labels = []
+        list.__init__(self)
 
-        # current length of all instructions combined
-        self.length = 0
+        # add each argument to the list
+        map(self.append, args)
 
-        # add each instruction using our simple handler.
-        self.instructions = []
-        map(self.__iadd__, args)
-
-    def __len__(self):
-        """Return the length of all instructions chained."""
-        return self.length
-
-    def __str__(self):
+    def __repr__(self):
         """Return a string representation of all instructions chained."""
         # convert an instruction into a string representation, labels need an
         # additional semicolon
-        f = lambda x: str(x) if not isinstance(x, Label) else str(x) + ':'
-        return '\n'.join(map(f, self.instructions))
+        f = lambda x: repr(x) if not isinstance(x, Label) else repr(x) + ':'
+        return '\n'.join(map(f, list.__iter__(self)))
 
-    def encode(self):
+    def __str__(self):
         """Return the Machine Code representation."""
-        return ''.join(map(lambda x: x.encode(), self.instructions))
+        return ''.join(map(str, list.__iter__(self)))
 
-    def __iadd__(self, other):
-        """self += other"""
+    def assemble(self):
+        """Assemble the given Block.
+
+        Assembly can *ONLY* be called on the top-level assembly block. Any
+        unresolved labels will result in an exception.
+
+        """
+
+    def append(self, other):
+        """Append instruction(s) in `other' to `self'."""
         # if a class object was given, we create an instance ourselves
+        # this can be either an Instruction or a Label
         if isinstance(other, types.ClassType):
             other = other()
 
-        if isinstance(other, Label):
-            other.parent = self
-            other.labelnr = len(self.labels)
-            other.offset = self.length
-            self.labels.append(other)
-            self.instructions.append(other)
-
-        elif isinstance(other, RelativeJump):
-            other.parent = self
-            other.lbl.labelnr = len(self.labels)
-            other.offset = self.length
-            self.instructions.append(other)
-            self.length += len(other)
-
-        elif isinstance(other, Instruction):
-            self.instructions.append(other)
-            self.length += len(other)
+        if isinstance(other, Instruction):
+            list.append(self, other)
 
         elif isinstance(other, Block):
             # we merge the `other' block with ours, by appending.
             # TODO deepcopy might get in a recursive loop somehow, if that
             # ever occurs, implement a __deepcopy__ which only makes a new
             # copy of Labels
-            map(self.__iadd__, map(copy.deepcopy, other.instructions))
+            map(self.append, map(copy.deepcopy, other.__iter__()))
 
         else:
             raise Exception('This object is not welcome here.')
 
         return self
+
+    def __iadd__(self, other):
+        """self += other"""
+        self.append(other)
+        return self
+
+    def __add__(self, other):
+        """self + other"""
+        return Block(self, other)
+
+    def __radd__(self, other):
+        """other + self"""
+        return Block(other, self)
 
 block = Block
 
@@ -882,7 +880,7 @@ class Label(Instruction):
         """Just in case, Labels don't have a Machine Code representation."""
         return ''
 
-    def __str__(self):
+    def __repr__(self):
         if isinstance(self.index, str):
             return self.index if not self.prepend else '__lbl_%s' % self.index
         return '__lbl_%d' % (self.labelnr + self.index if \
