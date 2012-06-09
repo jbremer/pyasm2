@@ -206,8 +206,9 @@ class CheckSyntax(unittest.TestCase):
             '\x40\xe9\xfa\xff\xff\xff')
 
         # local named labels
-        eq2(block('loop', inc(eax), inc(ebx), jmp(lbl('loop'))),
-            '__lbl_loop:\ninc eax\ninc ebx\njmp __lbl_loop\n',
+        block.block_id = 0
+        eq2(block('loop', inc(eax), inc(ebx), jmp('loop')),
+            '__lbl_1_loop:\ninc eax\ninc ebx\njmp __lbl_1_loop\n',
             '\x40\x43\xe9\xf9\xff\xff\xff')
 
         # merging blocks with relative jumps

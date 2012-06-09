@@ -769,7 +769,10 @@ class RelativeJump:
 
     def __repr__(self):
         name = self._name_ or self.__class__.__name__
-        return name + ' ' + repr(self.value)
+        value = self.value
+        if not isinstance(value, str):
+            value = repr(value)
+        return name + ' ' + value
 
     def assemble(self, short=True, labels={}, offset=0):
         """Assemble the Relative Jump.
@@ -786,6 +789,8 @@ class RelativeJump:
             else:
                 index = self.value.index + self.value.base
                 to = labels[index - (self.value.index > 0)]
+        elif isinstance(self.value, str):
+            to = labels[self.value]
 
         if self._index_ is None:
             return chr(self._opcode_) + dword.pack(to - offset - 5)
@@ -794,8 +799,13 @@ class RelativeJump:
                 to - offset - 6)
 
 class Block:
+    block_id = 0
+
     def __init__(self, *args):
         self._l = []
+
+        # unique block id for each Block
+        Block.block_id += 1
 
         # current index for new labels
         self.label_base = 0
@@ -817,7 +827,7 @@ class Block:
                 ret += repr(instr) + ':\n'
             elif isinstance(instr, str):
                 index += 1
-                ret += '__lbl_%s:\n' % instr
+                ret += '%s:\n' % instr
             elif isinstance(instr, RelativeJump) and isinstance(instr.value,
                     Label):
                 instr.value.base = index
@@ -909,28 +919,32 @@ class Block:
         if isinstance(other, types.ClassType):
             other = other()
 
+        def labelify(val):
+            if isinstance(val, Label):
+                val.base = self.label_base
+            if isinstance(val, str):
+                val = '__lbl_%d_%s' % (self.block_id, val)
+            return val
+
         if isinstance(other, Label):
             other.base = self.label_base
             self._l.append(other)
             self.label_base += 1
 
         elif isinstance(other, str):
-            self._l.append(other)
+            self._l.append('__lbl_%d_%s' % (self.block_id, other))
             self.label_base += 1
 
         elif isinstance(other, RelativeJump):
             self._l.append(other)
 
-            if isinstance(other.value, Label):
-                other.value.base = self.label_base
+            other.value = labelify(other.value)
 
         elif isinstance(other, Instruction):
             self._l.append(other)
 
-            if isinstance(other.op1, Label):
-                other.op1.base = self.label_base
-            if isinstance(other.op2, Label):
-                other.op2.base = self.label_base
+            other.op1 = labelify(other.op1)
+            other.op2 = labelify(other.op2)
             # TODO add memory address support
 
         elif isinstance(other, Block):
