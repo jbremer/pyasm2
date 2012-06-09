@@ -200,6 +200,11 @@ class CheckSyntax(unittest.TestCase):
         eq2(block(e_init, b, b, b, b, e_end), e_init_s + b_s * 4 + e_end_s,
             e_init_e + b_e * 4 + e_end_e)
 
+        # global named labels
+        eq2(block(lbl('loop'), inc(eax), jmp(lbl('loop'))),
+            '__lbl_loop:\ninc eax\njmp __lbl_loop\n',
+            '\x40\xe9\xfa\xff\xff\xff')
+
         # merging blocks with relative jumps
         #eq(block(d, d, d), 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\n' +
         #    'jnz __lbl_0\nxor eax, eax\n__lbl_1:\ninc eax\ncmp eax, 0x10\n' +

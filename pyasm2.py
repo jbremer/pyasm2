@@ -781,8 +781,11 @@ class RelativeJump:
         """
         to = self.value
         if isinstance(self.value, Label):
-            index = self.value.index + self.value.base
-            to = labels[index - (self.value.index > 0)]
+            if isinstance(self.value.index, str):
+                to = labels[self.value.index]
+            else:
+                index = self.value.index + self.value.base
+                to = labels[index - (self.value.index > 0)]
 
         if self._index_ is None:
             return chr(self._opcode_) + dword.pack(to - offset - 5)
@@ -962,6 +965,9 @@ class Label:
         self.base = 0
 
     def __repr__(self):
+        if isinstance(self.index, str):
+            return '__lbl_%s' % self.index
+
         index = self.index + self.base
 
         # as we have to include Label(0) possibilities
