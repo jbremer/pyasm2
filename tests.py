@@ -205,6 +205,11 @@ class CheckSyntax(unittest.TestCase):
             '__lbl_loop:\ninc eax\njmp __lbl_loop\n',
             '\x40\xe9\xfa\xff\xff\xff')
 
+        # local named labels
+        eq2(block('loop', inc(eax), inc(ebx), jmp(lbl('loop'))),
+            '__lbl_loop:\ninc eax\ninc ebx\njmp __lbl_loop\n',
+            '\x40\x43\xe9\xf9\xff\xff\xff')
+
         # merging blocks with relative jumps
         #eq(block(d, d, d), 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\n' +
         #    'jnz __lbl_0\nxor eax, eax\n__lbl_1:\ninc eax\ncmp eax, 0x10\n' +

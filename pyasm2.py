@@ -815,6 +815,9 @@ class Block:
                 instr.base = index
                 index += 1
                 ret += repr(instr) + ':\n'
+            elif isinstance(instr, str):
+                index += 1
+                ret += '__lbl_%s:\n' % instr
             elif isinstance(instr, RelativeJump) and isinstance(instr.value,
                     Label):
                 instr.value.base = index
@@ -908,6 +911,10 @@ class Block:
 
         if isinstance(other, Label):
             other.base = self.label_base
+            self._l.append(other)
+            self.label_base += 1
+
+        elif isinstance(other, str):
             self._l.append(other)
             self.label_base += 1
 
