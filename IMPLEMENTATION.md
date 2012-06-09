@@ -331,7 +331,7 @@ There are two solutions to this problem, as far as I can tell.
     From here the instruction can determine if the offset has to be 8bit or
     32bit.
 *   At first each relative jump is created using a 32bit relative offset.
-    Then, after assembling each instruction, the instructions are enumarated
+    Then, after assembling each instruction, the instructions are enumerated
     and a check is done if the relative jumps would fit as jumps with an 8bit
     relative offset as well. If that is the case, the jump is updated, and all
     the other instructions are updated as well. This goes one until there are
