@@ -616,9 +616,6 @@ class Instruction:
         Exception is raised.
 
         """
-        if hasattr(self, '_encoding'):
-            return self._encoding
-
         if self.op1 is None:
             return None
 
@@ -698,11 +695,6 @@ class Instruction:
 
     def __str__(self):
         """Encode this Instruction into its machine code representation."""
-        # cache the generated machine code, because i'm too lazy to make a
-        # good implementation of __len__().
-        if hasattr(self, '_encode'):
-            return self._encode
-
         enc = self.encoding()
 
         ret = ''
@@ -765,37 +757,44 @@ class Instruction:
         self._encode = ret + disp
         return self._encode
 
-class RelativeJump(Instruction):
+class RelativeJump:
     _index_ = None
     _name_ = None
 
-    """Relative Jumps are somewhat special opcodes, they take labels."""
-    def __init__(self, val):
-        self.value = Immediate(val) if isinstance(val, (int, long)) else val
+    def __init__(self, value):
+        self.value = value
 
     def __len__(self):
-        """For the sake of simplicity, we return a relative jmp with 32bit
-            relative address."""
         return 6 if self._index_ is not None else 5
 
     def __repr__(self):
         name = self._name_ or self.__class__.__name__
         return name + ' ' + repr(self.value)
 
-    def __str__(self):
-        """Encode this Relative Jump."""
-        to = self.parent.labels[self.lbl.labelnr + self.lbl.index]
+    def assemble(self, short=True, labels={}, offset=0):
+        """Assemble the Relative Jump.
+
+        `short' indicates if the relative offset should be encoded as 8bit
+        value, if possible.
+        `offset' is the offset of this jump
+
+        """
+        to = self.value
+        if isinstance(self.value, Label):
+            to = labels[self.value.index + self.value.base]
 
         if self._index_ is None:
-            return chr(self._opcode_) + dword.pack(
-                to.offset - self.offset - 5)
+            return chr(self._opcode_) + dword.pack(to - offset - 5)
         else:
             return '\x0f' + chr(0x80 + self._index_) + dword.pack(
-                to.offset - self.offset - 6)
+                to - offset - 6)
 
-class Block(list):
+class Block:
     def __init__(self, *args):
-        list.__init__(self)
+        self._l = []
+
+        # current index for new labels
+        self.label_base = 0
 
         # add each argument to the list
         map(self.append, args)
@@ -803,21 +802,97 @@ class Block(list):
     def __repr__(self):
         """Return a string representation of all instructions chained."""
         # convert an instruction into a string representation, labels need an
-        # additional semicolon
-        f = lambda x: repr(x) if not isinstance(x, Label) else repr(x) + ':'
-        return '\n'.join(map(f, list.__iter__(self)))
+        # additional semicolon and have to be absolute offset, rather than
+        # a relative one
+        ret = ''
+        index = 0
+        for instr in self._l:
+            if isinstance(instr, Label):
+                instr.base = index
+                index += 1
+                ret += repr(instr) + ':\n'
+            elif isinstance(instr, RelativeJump) and isinstance(instr.value,
+                    Label):
+                instr.value.base = index
+                ret += repr(instr) + '\n'
+            else:
+                ret += repr(instr) + '\n'
+        return ret
 
     def __str__(self):
         """Return the Machine Code representation."""
-        return ''.join(map(str, list.__iter__(self)))
+        return ''.join(map(str, self._l))
 
-    def assemble(self):
+    def assemble(self, recursion=10):
         """Assemble the given Block.
 
         Assembly can *ONLY* be called on the top-level assembly block. Any
         unresolved labels will result in an exception.
 
+        `recursion' indicates the maximal amount of times to recurse in order
+        to optimize the size of conditional jumps (see docs.)
+
         """
+        local_labels = {}
+        global_labels = {}
+        offset = 0
+
+        # first we obtain the offset of each label
+        for idx, instr in enumerate(self._l):
+            # convert any class objects to instances
+            if isinstance(instr, types.ClassType):
+                instr = instr()
+                self._l[idx] = instr
+
+            if isinstance(instr, (str, Label)):
+                # named local label
+                if isinstance(instr, str):
+                    local_labels[instr] = offset
+
+                # anonymous local label
+                elif not instr.index:
+                    instr.index = len(local_labels)
+                    local_labels[instr.index] = offset
+
+                # global named label
+                elif isinstance(instr.index, str):
+                    global_labels[instr.index] = offset
+                    local_labels[instr.index] = offset
+
+            elif isinstance(instr, Instruction):
+                offset += len(instr)
+
+            elif isinstance(instr, RelativeJump):
+                offset += 6
+
+                # is this a label?
+                if isinstance(instr.value, Label):
+
+                    # is this an anonymous label?
+                    if isinstance(instr.value, (int, long)):
+                        # make an absolute index from the relative one
+                        instr.value.index += len(local_labels)
+
+        # do at most `recursion' iterations in order to try to optimize the
+        # relative jumps
+        # ...
+
+        machine_code = ''
+        offset = 0
+
+        # now we assemble the machine code
+        for instr in self._l:
+
+            if isinstance(instr, Instruction):
+                machine_code += str(instr)
+
+            elif isinstance(instr, RelativeJump):
+                machine_code += instr.assemble(short=False,
+                    labels=local_labels, offset=offset)
+
+            offset = len(machine_code)
+
+        return machine_code
 
     def append(self, other):
         """Append instruction(s) in `other' to `self'."""
@@ -826,15 +901,33 @@ class Block(list):
         if isinstance(other, types.ClassType):
             other = other()
 
-        if isinstance(other, Instruction):
-            list.append(self, other)
+        if isinstance(other, Label):
+            other.base = self.label_base
+            self._l.append(other)
+            self.label_base += 1
+
+        elif isinstance(other, RelativeJump):
+            self._l.append(other)
+
+            if isinstance(other.value, Label):
+                other.value.base = self.label_base
+
+        elif isinstance(other, Instruction):
+            self._l.append(other)
+
+            if isinstance(other.op1, Label):
+                other.op1.base = self.label_base
+            if isinstance(other.op2, Label):
+                other.op2.base = self.label_base
+            # TODO add memory address support
 
         elif isinstance(other, Block):
             # we merge the `other' block with ours, by appending.
             # TODO deepcopy might get in a recursive loop somehow, if that
             # ever occurs, implement a __deepcopy__ which only makes a new
             # copy of Labels
-            map(self.append, map(copy.deepcopy, other.__iter__()))
+            #map(self.append, map(copy.deepcopy, other._l))
+            map(self.append, other._l)
 
         else:
             raise Exception('This object is not welcome here.')
@@ -854,37 +947,20 @@ class Block(list):
         """other + self"""
         return Block(other, self)
 
+    def __iter__(self):
+        return self._l
+
 block = Block
 
-class Label(Instruction):
-    """Labels allow Blocks to define relative jumps without knowing the exact
-        offset beforehand."""
-    def __init__(self, index=None, prepend=True):
-        """Initialize a new Label or point to an existing label.
-
-        Initializing a Label object without any arguments creates an anonymous
-        label, these can later be referenced by using an index, such as 1
-        (the next label) or -1 (the last label.)
-
-        `prepend' indicates if `__lbl_' should be placed in front of the label.
-
-        """
+class Label:
+    def __init__(self, index=0):
         self.index = index
-        self.prepend = prepend
 
-    def __len__(self):
-        """Just in case, Labels don't have a size as Machine Code."""
-        return 0
-
-    def encode(self):
-        """Just in case, Labels don't have a Machine Code representation."""
-        return ''
+        # any base to add to `index'
+        self.base = 0
 
     def __repr__(self):
-        if isinstance(self.index, str):
-            return self.index if not self.prepend else '__lbl_%s' % self.index
-        return '__lbl_%d' % (self.labelnr + self.index if \
-            self.index is not None else self.labelnr)
+        return '__lbl_%s' % (self.index + self.base)
 
 lbl = Label
 
@@ -1110,11 +1186,7 @@ class jnle(RelativeJump):
     _index_ = 15
 
 def _branch_instr(name, opcode, enc, arg):
-    if isinstance(arg, (int, long)):
-        arg = Label(int(arg))
-    elif isinstance(arg, str):
-        arg = Label(arg)
-    elif not isinstance(arg, Label):
+    if not isinstance(arg, (int, long, str, Label)):
         i = Instruction(arg)
         i._enc_ = enc
         i._name_ = name
