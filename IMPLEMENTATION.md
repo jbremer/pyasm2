@@ -302,6 +302,17 @@ print repr(Block(a))
 # Block(xor(eax, eax), retn)
 ```
 
+#### Combining Instructions Directly
+
+Instead of writing e.g. `Block(mov(eax, ebx), mov(ebx, 42))`, pyasm2 offers a
+shorthand.
+
+```python
+a = mov(eax, ebx) + mov(ebx, 42)
+print repr(a)
+# Block(mov(eax, ebx), mov(ebx, 42))
+```
+
 ## pyasm2 Internals
 
 Although most of pyasm2 is fairly straightforward (chaining instructions is
