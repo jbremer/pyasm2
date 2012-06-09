@@ -313,6 +313,70 @@ print repr(a)
 # Block(mov(eax, ebx), mov(ebx, 42))
 ```
 
+## Raw Data Sections
+
+As any assembler, pyasm2 also supports raw data. There are a few supported
+data types; signed/unsigned 8/16/32/64bit integers, strings and labels (which
+are 32bit pointers on x86.)
+
+Some examples should suffice as explanation.
+
+```python
+a = Block(
+    String('abc'),
+    Int8(0x64),
+    Uint8(0x65),
+    Uint16(0x6766),
+    Int32(0x6b6a6968)
+)
+print str(a)
+# abcdefghijlk
+```
+
+#### Raw Data Aliases
+
+Some interesting aliases include.
+
+*   `S = String`
+*   `i8 = Int8`
+*   `u8 = Uint8`
+*   etc.
+
+#### Multiple Items with the same Type
+
+It is perfectly possible to define multiple values of the same type in one
+simple statement.
+
+```python
+a = Uint32(0x11223344, 0x44332211, 0x12345678, 0x87654321)
+```
+
+## Blocks part three
+
+Now we have seen the declaration of raw data using pyasm2, it is time to link
+code and data sections. For example, in normal executable binaries, it is
+normal to have different so-called sections for code and data. This way the
+code is seperated from the data.
+
+This gives us a problem. When assembling, we do not have to combine the text
+and data blocks, so in order to get the correct addresses of code and data,
+we do the following. We assign an address to the data section, and from there
+give every label with address to the code section. This way the code section
+knows where to find the references to those labels.
+
+```python
+a = Block(
+    mov(eax, L('hello')),
+    # ... snip ...
+)
+b = Block(
+    L('hello'),
+    String('Hello World!\n\x00')
+)
+b.base_address(0x402000)
+a.references(b)
+```
+
 ## pyasm2 Internals
 
 Although most of pyasm2 is fairly straightforward (chaining instructions is
