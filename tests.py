@@ -211,6 +211,12 @@ class CheckSyntax(unittest.TestCase):
             '__lbl_1_loop:\ninc eax\ninc ebx\njmp __lbl_1_loop\n',
             '\x40\x43\xe9\xf9\xff\xff\xff')
 
+        # tweaked anonymous label references
+        block.block_id = 0
+        eq2(block(lbl, inc(dword[esp]), jmp(lbl-1)),
+            '__lbl_0:\ninc dword [esp]\njmp __lbl_0\n',
+            '\xff\x04\x24\xe9\xf8\xff\xff\xff')
+
         # merging blocks with relative jumps
         #eq(block(d, d, d), 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\n' +
         #    'jnz __lbl_0\nxor eax, eax\n__lbl_1:\ninc eax\ncmp eax, 0x10\n' +

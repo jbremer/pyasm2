@@ -916,7 +916,7 @@ class Block:
         """Append instruction(s) in `other' to `self'."""
         # if a class object was given, we create an instance ourselves
         # this can be either an Instruction or a Label
-        if isinstance(other, types.ClassType):
+        if isinstance(other, (types.ClassType, _MetaLabel)):
             other = other()
 
         def labelify(val):
@@ -978,7 +978,16 @@ class Block:
 
 block = Block
 
+class _MetaLabel(type):
+    def __sub__(cls, other):
+        return Label(-other)
+
+    def __add__(cls, other):
+        return Label(other)
+
 class Label:
+    __metaclass__ = _MetaLabel
+
     def __init__(self, index=0):
         self.index = index
 
