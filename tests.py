@@ -217,6 +217,12 @@ class CheckSyntax(unittest.TestCase):
             '__lbl_0:\ninc dword [esp]\njmp __lbl_0\n',
             '\xff\x04\x24\xe9\xf8\xff\xff\xff')
 
+        # temporary blocks as lists
+        a = block(mov(eax, ebx), mov(ebx, 42))
+        eq2(a + [xor(ecx, ecx), retn],
+            'mov eax, ebx\nmov ebx, 0x2a\nxor ecx, ecx\nretn\n',
+            '\x8b\xc3\xbb\x2a\x00\x00\x00\x31\xc9\xc3')
+
         # merging blocks with relative jumps
         #eq(block(d, d, d), 'xor eax, eax\n__lbl_0:\ninc eax\ncmp eax, 0x10\n' +
         #    'jnz __lbl_0\nxor eax, eax\n__lbl_1:\ninc eax\ncmp eax, 0x10\n' +

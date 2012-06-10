@@ -947,6 +947,9 @@ class Block:
             other.op2 = labelify(other.op2)
             # TODO add memory address support
 
+        elif isinstance(other, (list, tuple)):
+            map(self.append, other)
+
         elif isinstance(other, Block):
             # we merge the `other' block with ours, by appending.
             # TODO deepcopy might get in a recursive loop somehow, if that
