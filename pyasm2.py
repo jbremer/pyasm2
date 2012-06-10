@@ -757,6 +757,12 @@ class Instruction:
         self._encode = ret + disp
         return self._encode
 
+    def __add__(self, other):
+        return Block(self, other)
+
+    def __radd__(self, other):
+        return Block(other, self)
+
 class RelativeJump:
     _index_ = None
     _name_ = None
