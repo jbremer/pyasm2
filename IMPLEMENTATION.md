@@ -119,34 +119,7 @@ Whereas one could make a global named label using e.g. `Label('name')`, it is
 also possible to make a *local* named label; a label that's only defined for
 the current block. Because local labels are more commonly used than global
 labels, their syntax is easier as well. Local named labels are simply created
-by using a string as name.
-
-```python
-Block(
-    'loop',
-    inc(eax),
-    jmp(Label('loop'))
-)
-```
-
-#### Label References
-
-Labels are referenced by e.g. `Label('name')`. When looking up label
-references, pyasm2 will first try to find the label in the current block,
-and only if there is no such label in the current block, it will look it up
-in the parent. In other words, local named labels are more important than
-global named labels.
-
-### Further Label Tweaks
-
-Now we've seen the types of labels supported by pyasm2, it is time to get to
-some awesome tweaks which will speed up development and clean up your code
-even further.
-
-#### Simple Named Label References
-
-It is possible to reference a label simply by the name as string, rather than
-e.g. `Label('name')`.
+**and referenced** by using a string as name.
 
 ```python
 Block(
@@ -155,6 +128,30 @@ Block(
     jmp('loop')
 )
 ```
+
+#### Label References
+
+-Labels are referenced by e.g. `Label('name')`. When looking up label
+references, pyasm2 will first try to find the label in the current block,
+and only if there is no such label in the current block, it will look it up
+in the parent. In other words, local named labels are more important than
+global named labels.-
+
+Local Named Labels and Global Named Labels can *not* be mixed. E.g. the
+following snippet throws an error.
+
+```python
+Block(
+    Label('loop'),  # global named label
+    inc(eax),
+    jmp('loop')     # local named label
+```
+
+### Further Label Tweaks
+
+Now we've seen the types of labels supported by pyasm2, it is time to get to
+some awesome tweaks which will speed up development and clean up your code
+even further.
 
 #### Label classobj instead of instance
 
