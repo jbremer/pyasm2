@@ -230,6 +230,16 @@ _index_opcodes = sorted(_names[x] for x in ('anewarray', 'checkcast',
 _branch_opcodes = sorted(_names[x] for x in _names if x[:2] == 'if' or
     x == 'goto' or x == 'jsr')
 
+_primite_types = {
+    10: 'int',
+    8: 'byte',
+    11: 'long',
+    7: 'double',
+    6: 'float',
+    5: 'char',
+    9: 'short',
+}
+
 _other_opcodes = {
     'bipush': lambda ch, d, o: Instruction(name=_table[ch], length=2,
         value=ord(d[o+1]), rep='%s %d' % (_table[ch], ord(d[o+1]))),
@@ -239,7 +249,8 @@ _other_opcodes = {
     'lookupswitch': lambda ch, d, o: None,
     'tableswitch': lambda ch, d, o: None,
     'newarray': lambda ch, d, o: Instruction(name=_table[ch], length=2,
-        value=ord(d[o+1]), rep='%s %c' % (_table[ch], ord(d[o+1]))),
+        value=ord(d[o+1]), rep='%s %s' % (_table[ch],
+        _primite_types[ord(d[o+1])])),
     'goto_w': lambda ch, d, o: Instruction(name=_table[ch], length=5,
         value=SBInt32(None).parse(d[o+1:o+5]), rep='%s %d' % (_table[ch],
         SBInt32(None).parse(d[o+1:o+5]))),
