@@ -249,9 +249,11 @@ _other_opcodes = {
         value=SBInt32(None).parse(d[o+1:o+5]), rep='%s %d' % (_table[ch],
         SBInt32(None).parse(d[o+1:o+5]))),
     'multianewarray': lambda ch, d, o: Instruction(name=_table[ch], length=4,
-        cp=UBInt16(None).parse(d[o+1:o+3]), value=d[o+3]),
+        cp=UBInt16(None).parse(d[o+1:o+3]), value=ord(d[o+3]),
+        rep='%s #%d %d' % (_table[ch], UBInt16(None).parse(d[o+1:o+3]),
+        ord(d[o+3]))),
     'ldc': lambda ch, d, o: Instruction(name=_table[ch], length=2,
-        cp=ord(d[o+1])),
+        cp=ord(d[o+1]), rep='%s #%d' % (_table[ch], ord(d[o+1]))),
 }
 
 # convert the opcode names of _other_opcodes into opcode indices
@@ -313,12 +315,16 @@ def disassemble(data, offset=0):
     # instructions which only have an index into the constant pool as argument
     if ch in _index_opcodes:
         return Instruction(name=_table[ch], length=3,
-            cp=UBInt16(None).parse(data[offset+1:offset+3]))
+            cp=UBInt16(None).parse(data[offset+1:offset+3]),
+            rep='%s #%d' % (_table[ch],
+            UBInt16(None).parse(data[offset+1:offset+3])))
 
     # branch instructions that take a two-byte branch offset
     if ch in _branch_opcodes:
         return Instruction(name=_table[ch], length=3,
-            value=SBInt16(None).parse(data[offset+1:offset+3]))
+            value=SBInt16(None).parse(data[offset+1:offset+3]),
+            rep='%s %d' % (_table[ch],
+            SBInt16(None).parse(data[offset+1:offset+3])))
 
     # other opcodes which have to be handled independently
     if ch in _other_opcodes:
