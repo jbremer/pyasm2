@@ -218,7 +218,6 @@ _wide_opcodes = sorted(_names[x] for x in ('iload', 'fload', 'aload', 'lload',
 
 # opcode which is valid for the "wide" instruction with length 5
 _wide_inc = _names['iinc']
-_ldc = _names['ldc']
 
 # opcodes which have a two-byte index into the constant pool (and no further
 # arguments)
@@ -251,6 +250,8 @@ _other_opcodes = {
         SBInt32(None).parse(d[o+1:o+5]))),
     'multianewarray': lambda ch, d, o: Instruction(name=_table[ch], length=4,
         cp=UBInt16(None).parse(d[o+1:o+3]), value=d[o+3]),
+    'ldc': lambda ch, d, o: Instruction(name=_table[ch], length=2,
+        cp=ord(d[o+1])),
 }
 
 # convert the opcode names of _other_opcodes into opcode indices
@@ -272,7 +273,7 @@ class Instruction:
     def __repr__(self):
         ret = ['name="%s"' % self.name]
         if self.cp:
-            ret += ['cp=%d' % self.cp]
+            ret += ['cp=%s' % self.cp]
         if self.local:
             ret += ['local=%d' % self.local]
         if self.length:
@@ -304,7 +305,7 @@ def disassemble(data, offset=0):
             return None
 
     # if the opcode is in _wide_opcodes then it loads or stores a local
-    if ch in _wide_opcodes or ch == _ldc:
+    if ch in _wide_opcodes:
         return Instruction(name=_table[ch], length=2,
             local=ord(data[offset+1]), rep='%s v%d' % (_table[ch],
             ord(data[offset+1])))
