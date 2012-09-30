@@ -209,6 +209,10 @@ _table = {
     0xff: 'impdep2',
 }
 
+def _sbint16(x): return SBInt16(None).parse(x)
+def _sbint32(x): return SBInt32(None).parse(x)
+def _ubint16(x): return UBInt16(None).parse(x)
+
 # name to opcode table
 _names = dict((v if type(v) == str else v[0], k) for k, v in _table.items())
 
@@ -230,7 +234,7 @@ _index_opcodes = sorted(_names[x] for x in ('anewarray', 'checkcast',
 _branch_opcodes = sorted(_names[x] for x in _names if x[:2] == 'if' or
     x == 'goto' or x == 'jsr')
 
-_primite_types = {
+_primitive_types = {
     10: 'int',
     8: 'byte',
     11: 'long',
@@ -244,25 +248,24 @@ _other_opcodes = {
     'bipush': lambda ch, d, o: Instruction(name=_table[ch], length=2,
         value=ord(d[o+1]), rep='%s %d' % (_table[ch], ord(d[o+1]))),
     'sipush': lambda ch, d, o: Instruction(name=_table[ch], length=3,
-        value=SBInt16(None).parse(d[o+1:o+3]), rep='%s %d' % (_table[ch],
-        SBInt16(None).parse(d[o+1:o+3]))),
+        value=_sbint16(d[o+1:o+3]), rep='%s %d' % (_table[ch],
+        _sbint16(d[o+1:o+3]))),
     'lookupswitch': lambda ch, d, o: None,
     'tableswitch': lambda ch, d, o: None,
     'newarray': lambda ch, d, o: Instruction(name=_table[ch], length=2,
         value=ord(d[o+1]), rep='%s %s' % (_table[ch],
-        _primite_types[ord(d[o+1])])),
+        _primitive_types[ord(d[o+1])])),
     'goto_w': lambda ch, d, o: Instruction(name=_table[ch], length=5,
-        value=SBInt32(None).parse(d[o+1:o+5]), rep='%s %d' % (_table[ch],
-        SBInt32(None).parse(d[o+1:o+5]))),
+        value=_sbint32(d[o+1:o+5]), rep='%s %d' % (_table[ch],
+        _sbint32(d[o+1:o+5]))),
     'invokedynamic': lambda ch, d, o: None,
     'invokeinterface': lambda ch, d, o: None,
     'jsr_w': lambda ch, d, o: Instruction(name=_table[ch], length=5,
-        value=SBInt32(None).parse(d[o+1:o+5]), rep='%s %d' % (_table[ch],
-        SBInt32(None).parse(d[o+1:o+5]))),
+        value=_sbint32(d[o+1:o+5]), rep='%s %d' % (_table[ch],
+        _sbint32(d[o+1:o+5]))),
     'multianewarray': lambda ch, d, o: Instruction(name=_table[ch], length=4,
-        cp=UBInt16(None).parse(d[o+1:o+3]), value=ord(d[o+3]),
-        rep='%s #%d %d' % (_table[ch], UBInt16(None).parse(d[o+1:o+3]),
-        ord(d[o+3]))),
+        cp=_ubint16(d[o+1:o+3]), value=ord(d[o+3]), rep='%s #%d %d' % (
+        _table[ch], _ubint16(d[o+1:o+3]), ord(d[o+3]))),
     'ldc': lambda ch, d, o: Instruction(name=_table[ch], length=2,
         cp=ord(d[o+1]), rep='%s #%d' % (_table[ch], ord(d[o+1]))),
 }
@@ -306,12 +309,12 @@ def disassemble(data, offset=0):
         ch2 = ord(data[offset+1])
 
         if ch2 == _wide_inc:
-            idx = UBInt16(None).parse(data[offset+2:offset+4])
-            val = SBInt16(None).parse(data[offset+4:offset+6])
+            idx = _ubint16(data[offset+2:offset+4])
+            val = _sbint16(data[offset+4:offset+6])
             return Instruction(name=_table[ch2], local=idx, length=6,
                 value=val, rep='%s v%d, %d' % (_table[ch2], idx, val))
         elif ch2 in _wide_opcodes:
-            idx = UBInt16(None).parse(data[offset+2:offset+4])
+            idx = _ubint16(data[offset+2:offset+4])
             return Instruction(name=_table[ch2], local=idx, length=4,
                 rep='%s v%d' % (_table[ch2], idx))
         else:
@@ -326,16 +329,16 @@ def disassemble(data, offset=0):
     # instructions which only have an index into the constant pool as argument
     if ch in _index_opcodes:
         return Instruction(name=_table[ch], length=3,
-            cp=UBInt16(None).parse(data[offset+1:offset+3]),
+            cp=_ubint16(data[offset+1:offset+3]),
             rep='%s #%d' % (_table[ch],
-            UBInt16(None).parse(data[offset+1:offset+3])))
+            _ubint16(data[offset+1:offset+3])))
 
     # branch instructions that take a two-byte branch offset
     if ch in _branch_opcodes:
         return Instruction(name=_table[ch], length=3,
-            value=SBInt16(None).parse(data[offset+1:offset+3]),
+            value=_sbint16(data[offset+1:offset+3]),
             rep='%s %d' % (_table[ch],
-            SBInt16(None).parse(data[offset+1:offset+3])))
+            _sbint16(data[offset+1:offset+3])))
 
     # other opcodes which have to be handled independently
     if ch in _other_opcodes:
