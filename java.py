@@ -1,4 +1,9 @@
-from construct import SBInt16, SBInt32, UBInt16
+"""
+Java Disassembler & Assembler Engine   (C) 2012 Jurriaan Bremer
+https://github.com/jbremer/pyasm2
+
+"""
+import struct
 
 # http://en.wikipedia.org/wiki/Java_bytecode_instruction_listings
 _table = {
@@ -209,9 +214,9 @@ _table = {
     0xff: 'impdep2',
 }
 
-def _sbint16(x): return SBInt16(None).parse(x)
-def _sbint32(x): return SBInt32(None).parse(x)
-def _ubint16(x): return UBInt16(None).parse(x)
+def _sbint16(x): return struct.unpack('>h', x)[0]
+def _ubint16(x): return struct.unpack('>H', x)[0]
+def _sbint32(x): return struct.unpack('>i', x)[0]
 
 # name to opcode table
 _names = dict((v if type(v) == str else v[0], k) for k, v in _table.items())
