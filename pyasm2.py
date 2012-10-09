@@ -938,6 +938,7 @@ class mov(Instruction):
         # dirty hack to support 16bit for these particular instructions...
         ('\x66\x8b', (word, gpr), (word, memgpr)),
         ('\x66\x89', (word, memgpr), (word, gpr)),
+        ('\x66\xc7', (word, memgpr), (word, imm)),
     ]
 
 class movzx(Instruction):
@@ -1147,6 +1148,8 @@ class jle(RelativeJump):
 
 class jnle(RelativeJump):
     _index_ = 15
+
+jg = jnle
 
 def _branch_instr(name, opcode, enc, arg):
     if isinstance(arg, (int, long)):
