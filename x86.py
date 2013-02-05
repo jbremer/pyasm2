@@ -80,6 +80,8 @@ class MemoryAddress:
         # check if a register is valid..
         f = lambda x: x is None or isinstance(x, (GeneralPurposeRegister,
             XmmRegister))
+        if not size:
+            size = None
         assert size is None or size in (8, 16, 32, 64, 128)
         assert segment is None or isinstance(segment, SegmentRegister)
         f(reg1)
@@ -266,7 +268,7 @@ class MemoryAddress:
             q = str(self.reg2) if self.mult == 1 else \
                 str(self.reg2) + '*' + str(self.mult)
             s += q if not len(s) else '+' + q
-        if self.disp is not None:
+        if self.disp.value:
             q = '0x%x' % int(self.disp)
             s += q if not len(s) else '+' + q
         if self.size is not None:
@@ -670,6 +672,10 @@ class Instruction:
 
         raise Exception('Unknown or Invalid Encoding')
 
+    def name(self):
+        """The name of this instruction."""
+        return self._name_ or self.__class__.__name__
+
     def __repr__(self):
         """Representation of this Instruction."""
         s = ''
@@ -683,7 +689,7 @@ class Instruction:
         if self.rep:
             s += 'rep '
 
-        s += self._name_ or self.__class__.__name__
+        s += self.name()
         ops = filter(lambda x: x is not None, (self.op1, self.op2, self.op3))
         if len(ops):
             return s + ' ' + ', '.join(map(str, ops))
@@ -768,17 +774,20 @@ class RelativeJump:
     _name_ = None
 
     def __init__(self, value):
-        self.value = value
+        self.value = value if not isinstance(value, str) else int(value, 16)
 
     def __len__(self):
         return 6 if self._index_ is not None else 5
 
+    def name(self):
+        """The name of this instruction."""
+        return self._name_ or self.__class__.__name__
+
     def __repr__(self):
-        name = self._name_ or self.__class__.__name__
         value = self.value
         if not isinstance(value, str):
             value = repr(value)
-        return name + ' ' + value
+        return self.name() + ' ' + value
 
     def assemble(self, short=True, labels={}, offset=0):
         """Assemble the Relative Jump.
@@ -1388,3 +1397,9 @@ class sysenter(Instruction):
 
 class fninit(Instruction):
     _opcode_ = '\xdb\xe3'
+
+class cdq(Instruction):
+    _opcode_ = 0x99
+
+class cld(Instruction):
+    _opcode_ = 0xfc
