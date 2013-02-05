@@ -501,7 +501,7 @@ class Instruction:
         self.clean()
 
         # find the correct encoding for this combination of operands
-        self.encoding()
+        #self.encoding()
 
     def clean(self):
         """Alters the order of operands if needed."""
