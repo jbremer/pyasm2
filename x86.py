@@ -78,13 +78,8 @@ SegmentRegister.register = (es, cs, ss, ds, fs, gs)
 
 
 class MemoryAddress:
-    def __init__(self,
-                 size=None,
-                 segment=None,
-                 reg1=None,
-                 reg2=None,
-                 mult=None,
-                 disp=None):
+    def __init__(self, size=None, segment=None, reg1=None, reg2=None,
+                 mult=None, disp=None):
         """Create a new Memory Address."""
         # check if a register is valid..
         f = lambda x: x is None or isinstance(x, (gpr, xmm))
@@ -471,13 +466,8 @@ class Instruction:
     _enc_ = []
     _name_ = None
 
-    def __init__(self,
-                 operand1=None,
-                 operand2=None,
-                 operand3=None,
-                 lock=False,
-                 rep=False,
-                 repne=False):
+    def __init__(self, operand1=None, operand2=None, operand3=None,
+                 lock=False, rep=False, repne=False):
         """Initialize a new Instruction object."""
         assert operand1 is None or isinstance(operand1, self.VALID_OPERANDS)
         assert operand2 is None or isinstance(operand2, self.VALID_OPERANDS)
@@ -501,7 +491,7 @@ class Instruction:
         self.clean()
 
         # find the correct encoding for this combination of operands
-        #self.encoding()
+        # self.encoding()
 
     def clean(self):
         """Alters the order of operands if needed."""
@@ -767,7 +757,7 @@ class Instruction:
                 continue
 
             # handle the reg part of the modrm byte
-            if not typ in (mem, memgpr, memxmm) and modrm_reg is None:
+            if typ not in (mem, memgpr, memxmm) and modrm_reg is None:
                 modrm_reg = ops[i]
                 continue
 
@@ -994,7 +984,7 @@ class Block:
             # TODO deepcopy might get in a recursive loop somehow, if that
             # ever occurs, implement a __deepcopy__ which only makes a new
             # copy of Labels
-            #map(self.append, map(copy.deepcopy, other._l))
+            # map(self.append, map(copy.deepcopy, other._l))
             map(self.append, other._l)
 
         else:
@@ -1072,7 +1062,8 @@ class mov(Instruction):
     # mov r32, imm32 and mov r8, imm32
     _enc_ = \
         zip(range(0xb0, 0xb8), gpr.register8, ((byte, imm),) * 8) + \
-        zip(range(0xb8, 0xc0), gpr.register32, ((dword, imm),) * 8) + [
+        zip(range(0xb8, 0xc0), gpr.register32, ((dword, imm),) * 8) + \
+        [
             (0x8b, (dword, gpr), (dword, memgpr)),
             (0x89, (dword, memgpr), (dword, gpr)),
             (0x88, (byte, memgpr), (byte, gpr)),
@@ -1080,7 +1071,6 @@ class mov(Instruction):
             (0xc6, (byte, memgpr, 0), (byte, imm)),
             (0xc7, (dword, memgpr, 0), (dword, imm)),
         ]
-
 
 class movzx(Instruction):
     _enc_ = [
