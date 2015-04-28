@@ -139,7 +139,7 @@ class MemoryAddress:
         if self.reg1 is None and self.mult == 2 and self.reg2 != esp:
             self.reg1, self.mult = self.reg2, 1
 
-    def merge(self, other):
+    def merge(self, other, add=True):
         """Merge self with a Displacement, Register or Memory Address."""
         # it is not possible to merge with one of the predefined Memory
         # Addresses
@@ -149,7 +149,10 @@ class MemoryAddress:
             assert int(other) >= 0 and int(other) < 2**32
             assert self.disp is None
 
-            self.disp = other
+            if add:
+                self.disp = other
+            else:
+                self.disp = -other
 
             return self.clean()
 
@@ -262,6 +265,14 @@ class MemoryAddress:
         """other + self"""
         return self.merge(other)
 
+    def __sub__(self, other):
+        """self - other"""
+        return self.merge(other, add=False)
+
+    def __rsub__(self, other):
+        """other - self"""
+        return self.merge(other, add=False)
+
     def __str__(self):
         """Representation of this Memory Address."""
         sizes = {8: 'byte', 16: 'word', 32: 'dword', 64: 'qword', 128: 'oword'}
@@ -273,8 +284,14 @@ class MemoryAddress:
                 str(self.reg2) + '*' + str(self.mult)
             s += q if not len(s) else '+' + q
         if self.disp.value:
-            q = '0x%x' % int(self.disp)
-            s += q if not len(s) else '+' + q
+            if self.disp >= 0:
+                q = '0x%x' % int(self.disp)
+            else:
+                q = '-0x%x' % -int(self.disp)
+            if not len(s) or q[0] == '-':
+                s += q
+            else:
+                s += '+' + q
         if self.size is not None:
             if self.segment is not None:
                 return '%s [%s:%s]' % (sizes[self.size], str(self.segment), s)
@@ -537,7 +554,7 @@ class Instruction:
                     assert op2.disp is not None
                     mod = 0
                     rm = 5
-                    buf = struct.pack('I', op2.disp)
+                    buf = struct.pack('I', op2.disp % 2**32)
                 else:
                     sib = True
                     S = mults[op2.mult]
@@ -548,7 +565,7 @@ class Instruction:
                     # multiplication other than one without a 32bit
                     # displacement.
                     base = 5
-                    buf = struct.pack('I', op2.disp if op2.disp else 0)
+                    buf = struct.pack('I', op2.disp % 2**32 if op2.disp else 0)
             else:
                 if op2.reg2 is None:
                     # special case for `esp', since it requires the sib byte
@@ -594,21 +611,22 @@ class Instruction:
             # no displacement at all. when `mod' is three, there has to be
             # either a 8bit displacement or a 32bit one.
             if mod in (2, 3):
+                disp = int(op2.disp) % 2**32
                 if op2.disp is None:
                     if mod == 3:
                         mod = 1
                         buf = '\x00'
                     else:
                         mod = 0
-                elif int(op2.disp) >= 0 and int(op2.disp) < 0x80:
+                elif disp >= 0 and disp < 0x80:
                     mod = 1
-                    buf = chr(int(op2.disp))
-                elif int(op2.disp) >= 0xffffff80 and int(op2.disp) < 2**32:
+                    buf = chr(disp)
+                elif disp >= 0xffffff80 and disp < 2**32:
                     mod = 1
-                    buf = chr(int(op2.disp) & 0xff)
+                    buf = chr(disp & 0xff)
                 else:
                     mod = 2
-                    buf = struct.pack('I', op2.disp)
+                    buf = struct.pack('I', disp)
 
         # construct the modrm byte
         ret = chr((mod << 6) + (reg << 3) + rm)
