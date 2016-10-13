@@ -283,7 +283,7 @@ class MemoryAddress:
             q = str(self.reg2) if self.mult == 1 else \
                 str(self.reg2) + '*' + str(self.mult)
             s += q if not len(s) else '+' + q
-        if self.disp.value:
+        if self.disp:
             if self.disp >= 0:
                 q = '0x%x' % int(self.disp)
             else:
