@@ -163,6 +163,7 @@ class MemoryAddress:
                 self.reg1 = other
             else:
                 self.reg2 = other
+                self.mult = 1
 
             return self.clean()
 

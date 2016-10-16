@@ -5,7 +5,7 @@ Unittests that verify the integrity of pyasm2.
 
 """
 
-from pyasm2 import *
+from pyasm2.x86 import *
 import unittest
 
 class CheckSyntax(unittest.TestCase):
@@ -17,6 +17,7 @@ class CheckSyntax(unittest.TestCase):
         eq(str(byte[eax+eax*4]), 'byte [eax+eax*4]')
         eq(str(word[0xdeadf00d+8*esi+esp]), 'word [esp+esi*8+0xdeadf00d]')
         eq(str(eax+esi), '[eax+esi]')
+        eq(str(eax+ecx*1), '[ecx+eax]')
         eq(str(dword[0x00112233]), 'dword [0x112233]')
         ra(AssertionError, lambda: eax+eax+eax)
         ra(AssertionError, lambda: esp*8)
