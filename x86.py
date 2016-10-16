@@ -508,8 +508,8 @@ class Instruction:
         # clean operands, if needed
         self.clean()
 
-        # find the correct encoding for this combination of operands
-        # self.encoding()
+        # check the correct encoding for this combination of operands
+        self.encoding()
 
     def clean(self):
         """Alters the order of operands if needed."""
@@ -810,7 +810,7 @@ class RelativeJump:
     _name_ = None
 
     def __init__(self, value):
-        self.value = value if not isinstance(value, str) else int(value, 16)
+        self.value = value
 
     def __len__(self):
         return 6 if self._index_ is not None else 5
