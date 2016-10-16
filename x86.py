@@ -612,7 +612,8 @@ class Instruction:
             # no displacement at all. when `mod' is three, there has to be
             # either a 8bit displacement or a 32bit one.
             if mod in (2, 3):
-                disp = int(op2.disp) % 2**32
+                if op2.disp is not None:
+                    disp = int(op2.disp) % 2**32
                 if op2.disp is None:
                     if mod == 3:
                         mod = 1
