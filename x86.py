@@ -781,6 +781,10 @@ class Instruction:
                 modrm_reg = ops[i]
                 continue
 
+            if isinstance(ops[i], (gpr, xmm)) and modrm_rm is not None:
+                modrm_reg = ops[i]
+                continue
+
             # handle the rm part of the modrm byte
             if typ in (mem, gpr, xmm, memgpr, memxmm):
                 modrm_rm = ops[i]
