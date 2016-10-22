@@ -139,6 +139,7 @@ class CheckSyntax(unittest.TestCase):
         eq(rol(edx, cl), 'rol edx, cl', '\xd3\xc2')
         eq(xor(edx, esi), 'xor edx, esi', '\x31\xf2')
         eq(shl(esi, 4), 'shl esi, 0x4', '\xc1\xe6\x04')
+        eq(sal(esi, 4), 'sal esi, 0x4', '\xc1\xe6\x04')
         eq(xchg(byte[esp+0x42], al), 'xchg byte [esp+0x42], al',
             '\x86\x44\x24\x42')
         eq(xchg(al, byte[esp+0x42]), 'xchg byte [esp+0x42], al',

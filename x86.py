@@ -1479,7 +1479,7 @@ class shr(Instruction):
 
 
 class sal(Instruction):
-    _enc_ = _group_2_opcodes(6)
+    _enc_ = _group_2_opcodes(4)
 
 
 class sar(Instruction):
