@@ -148,6 +148,13 @@ class CheckSyntax(unittest.TestCase):
             '\x0f\xb6\x05\x01\x00\x00\x00')
         eq(movsx(eax, al), 'movsx eax, al', '\x0f\xbe\xc0')
 
+        eq(add(ecx, 0xff), 'add ecx, 0xff', '\x81\xc1\xff\x00\x00\x00')
+        eq(add(ecx, -0x1), 'add ecx, -0x1', '\x83\xc1\xff')
+        eq(imul(eax, ecx, 0xff), 'imul eax, ecx, 0xff', '\x69\xc1\xff\x00\x00\x00')
+        eq(imul(eax, ecx, -0x1), 'imul eax, ecx, -0x1', '\x6b\xc1\xff')
+        eq(cmp_(eax, 0xff), 'cmp eax, 0xff', '\x3d\xff\x00\x00\x00')
+        eq(cmp_(eax, -0x1), 'cmp eax, -0x1', '\x83\xf8\xff')
+
     def test_block(self):
         eq = lambda i, s, b: (self.assertEqual(repr(i), s,
             'Invalid string representation for: ' + repr(i)),
