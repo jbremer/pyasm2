@@ -1149,7 +1149,7 @@ class push(Instruction):
         (0x1e, ds),
         ('\x0f\xa0', fs),
         ('\x0f\xa8', gs),
-        (0x6a, (byte, imm)),
+        (0x6a, (byte, signed_imm)),
         (0x68, (dword, imm)),
         (0xff, (dword, mem, 6)),
     ]
