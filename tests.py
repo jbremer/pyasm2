@@ -5,7 +5,7 @@ Unittests that verify the integrity of pyasm2.
 
 """
 
-from pyasm2 import *
+from pyasm2.x86 import *
 import unittest
 
 class CheckSyntax(unittest.TestCase):
@@ -17,6 +17,7 @@ class CheckSyntax(unittest.TestCase):
         eq(str(byte[eax+eax*4]), 'byte [eax+eax*4]')
         eq(str(word[0xdeadf00d+8*esi+esp]), 'word [esp+esi*8+0xdeadf00d]')
         eq(str(eax+esi), '[eax+esi]')
+        eq(str(eax+ecx*1), '[ecx+eax]')
         eq(str(dword[0x00112233]), 'dword [0x112233]')
         ra(AssertionError, lambda: eax+eax+eax)
         ra(AssertionError, lambda: esp*8)
@@ -83,6 +84,9 @@ class CheckSyntax(unittest.TestCase):
         eq(inc(edx), 'inc edx', '\x42')
         eq(dec(esi), 'dec esi', '\x4e')
 
+        eq(test(ecx, ecx), 'test ecx, ecx', '\x85\xc9')
+        eq(xchg(esi, esp), 'xchg esi, esp', '\x87\xe6')
+
         eq(pshufd(xmm4, oword[edx], 0x11), 'pshufd xmm4, oword [edx], 0x11',
             '\x66\x0f\x70\x22\x11')
         eq(pshufd(xmm2, xmm0, 0x40), 'pshufd xmm2, xmm0, 0x40',
@@ -135,6 +139,7 @@ class CheckSyntax(unittest.TestCase):
         eq(rol(edx, cl), 'rol edx, cl', '\xd3\xc2')
         eq(xor(edx, esi), 'xor edx, esi', '\x31\xf2')
         eq(shl(esi, 4), 'shl esi, 0x4', '\xc1\xe6\x04')
+        eq(sal(esi, 4), 'sal esi, 0x4', '\xc1\xe6\x04')
         eq(xchg(byte[esp+0x42], al), 'xchg byte [esp+0x42], al',
             '\x86\x44\x24\x42')
         eq(xchg(al, byte[esp+0x42]), 'xchg byte [esp+0x42], al',
@@ -143,6 +148,13 @@ class CheckSyntax(unittest.TestCase):
         eq(movzx(eax, byte [1]), 'movzx eax, byte [0x1]',
             '\x0f\xb6\x05\x01\x00\x00\x00')
         eq(movsx(eax, al), 'movsx eax, al', '\x0f\xbe\xc0')
+
+        eq(add(ecx, 0xff), 'add ecx, 0xff', '\x81\xc1\xff\x00\x00\x00')
+        eq(add(ecx, -0x1), 'add ecx, -0x1', '\x83\xc1\xff')
+        eq(imul(eax, ecx, 0xff), 'imul eax, ecx, 0xff', '\x69\xc1\xff\x00\x00\x00')
+        eq(imul(eax, ecx, -0x1), 'imul eax, ecx, -0x1', '\x6b\xc1\xff')
+        eq(cmp_(eax, 0xff), 'cmp eax, 0xff', '\x3d\xff\x00\x00\x00')
+        eq(cmp_(eax, -0x1), 'cmp eax, -0x1', '\x83\xf8\xff')
 
     def test_block(self):
         eq = lambda i, s, b: (self.assertEqual(repr(i), s,

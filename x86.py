@@ -22,16 +22,26 @@ import types
 
 class Immediate:
     """Defines Immediates, immediates can also be used as addresses."""
-    def __init__(self, value=0, addr=False):
+    def __init__(self, value=0, addr=False, signed=False):
         self.value = value
         self.addr = addr
 
-        if value < 2**8:
-            self.size = byte.size
-        elif value < 2**16:
-            self.size = word.size
+        if signed:
+            if -2**7 <= value < 2**7:
+                self.size = byte.size
+            elif -2**15 <= value < 2**15:
+                self.size = word.size
+            else:
+                self.size = dword.size
+                self.value = (2**31 + value) % 2**32 - 2**31
         else:
-            self.size = dword.size
+            if 0 <= value < 2**8:
+                self.size = byte.size
+            elif 0 <= value < 2**16:
+                self.size = word.size
+            else:
+                self.size = dword.size
+                self.value = value % 2**32
 
     def __int__(self):
         return self.value
@@ -43,7 +53,15 @@ class Immediate:
         return self.value != int(other)
 
     def __str__(self):
-        return '0x%x' % self.value
+        if self.value < 0:
+            return '-0x%x' % -self.value
+        else:
+            return '0x%x' % self.value
+
+class SignedImmediate(Immediate):
+    """Defines Signed Immediates."""
+    def __init__(self, value=0, addr=False):
+		Immediate.__init__(self, value, addr, signed=True)
 
 
 class SegmentRegister:
@@ -64,6 +82,7 @@ class SegmentRegister:
 # make an alias `imm' to Immediate in order to simplify the creation of
 # Instruction's
 imm = Immediate
+signed_imm = SignedImmediate
 
 # define each segment register.
 es = SegmentRegister(0, 'es')
@@ -163,6 +182,7 @@ class MemoryAddress:
                 self.reg1 = other
             else:
                 self.reg2 = other
+                self.mult = 1
 
             return self.clean()
 
@@ -493,7 +513,7 @@ class Instruction:
         assert not isinstance(operand2, list) or len(operand2) == 1
 
         # convert int and long's to Immediate values.
-        f = lambda x: x if not isinstance(x, (int, long)) else Immediate(x)
+        f = lambda x: x if not isinstance(x, (int, long)) else Immediate(x, signed=x < 0)
         # convert lists with one entry to Memory Addresses
         g = lambda x: x if not isinstance(x, list) else x[0]
 
@@ -507,8 +527,8 @@ class Instruction:
         # clean operands, if needed
         self.clean()
 
-        # find the correct encoding for this combination of operands
-        # self.encoding()
+        # check the correct encoding for this combination of operands
+        self.encoding()
 
     def clean(self):
         """Alters the order of operands if needed."""
@@ -611,7 +631,8 @@ class Instruction:
             # no displacement at all. when `mod' is three, there has to be
             # either a 8bit displacement or a 32bit one.
             if mod in (2, 3):
-                disp = int(op2.disp) % 2**32
+                if op2.disp is not None:
+                    disp = int(op2.disp) % 2**32
                 if op2.disp is None:
                     if mod == 3:
                         mod = 1
@@ -665,11 +686,15 @@ class Instruction:
                 if op1.__class__ != self.op1.__class__ or op1 != self.op1:
                     continue
             # check the operand (and size) of this match
-            elif not issubclass(op1[1], self.op1.__class__) or \
-                    hasattr(self.op1, 'size') and op1[0] is not None and \
-                    (op1[0].size != self.op1.size if op1[1] != imm else
-                     self.op1.size > op1[0].size):
+            elif not issubclass(op1[1], self.op1.__class__):
                 continue
+            elif hasattr(self.op1, 'size') and op1[0] is not None:
+                if op1[1] in (imm, signed_imm):
+                    if op1[1](int(self.op1)).size > op1[0].size:
+                        continue
+                else:
+                    if op1[0].size != self.op1.size:
+                        continue
 
             if op2 is None:
                 self._encoding = (opcode, op1, op2, op3)
@@ -681,18 +706,25 @@ class Instruction:
                 if op2.__class__ != self.op2.__class__ or op2 != self.op2:
                     continue
             # check the operand (and size) of this match
-            elif not issubclass(op2[1], self.op2.__class__) or \
-                    hasattr(self.op2, 'size') and op2[0] is not None and \
-                    (op2[0].size != self.op2.size if op2[1] != imm else
-                     self.op2.size > op2[0].size):
+            elif not issubclass(op2[1], self.op2.__class__):
                 continue
+            elif hasattr(self.op2, 'size') and op2[0] is not None:
+                if op2[1] in (imm, signed_imm):
+                    if op2[1](int(self.op2)).size > op2[0].size:
+                        continue
+                else:
+                    if op2[0].size != self.op2.size:
+                        continue
 
             if op3 is None:
                 self._encoding = (opcode, op1, op2, op3)
                 return self._encoding
 
             # check if the third operand matches (can only be an Immediate)
-            if op3[1] != self.op3.__class__:
+            if not issubclass(op3[1], self.op3.__class__):
+                continue
+            elif op3[1] in (imm, signed_imm) and \
+                    op3[1](int(self.op3)).size > op3[0].size:
                 continue
 
             # we found a matching encoding, return it.
@@ -770,12 +802,16 @@ class Instruction:
                 modrm_reg = gpr.register32[op[2]]
 
             # handle Immediates
-            if typ == imm:
+            if typ in (imm, signed_imm):
                 disp += size.pack(ops[i])
                 continue
 
             # handle the reg part of the modrm byte
             if typ not in (mem, memgpr, memxmm) and modrm_reg is None:
+                modrm_reg = ops[i]
+                continue
+
+            if isinstance(ops[i], (gpr, xmm)) and modrm_rm is not None:
                 modrm_reg = ops[i]
                 continue
 
@@ -804,7 +840,7 @@ class RelativeJump:
     _name_ = None
 
     def __init__(self, value):
-        self.value = value if not isinstance(value, str) else int(value, 16)
+        self.value = value
 
     def __len__(self):
         return 6 if self._index_ is not None else 5
@@ -1113,7 +1149,7 @@ class push(Instruction):
         (0x1e, ds),
         ('\x0f\xa0', fs),
         ('\x0f\xa8', gs),
-        (0x6a, (byte, imm)),
+        (0x6a, (byte, signed_imm)),
         (0x68, (dword, imm)),
         (0xff, (dword, mem, 6)),
     ]
@@ -1359,7 +1395,7 @@ _group_1_opcodes = lambda x: [
     (0x03+8*x, (dword, gpr), (dword, memgpr)),
     (0x04+8*x, al, (byte, imm)),
     (0x80, (byte, memgpr, x), (byte, imm)),
-    (0x83, (dword, memgpr, x), (byte, imm)),
+    (0x83, (dword, memgpr, x), (byte, signed_imm)),
     (0x05+8*x, eax, (dword, imm)),
     (0x81, (dword, memgpr, x), (dword, imm))]
 
@@ -1443,7 +1479,7 @@ class shr(Instruction):
 
 
 class sal(Instruction):
-    _enc_ = _group_2_opcodes(6)
+    _enc_ = _group_2_opcodes(4)
 
 
 class sar(Instruction):
@@ -1470,7 +1506,7 @@ class mul(Instruction):
 class imul(Instruction):
     _enc_ = _group_3_opcodes(5) + [
         ('\x0f\xaf', (dword, gpr), (dword, memgpr)),
-        (0x6b, (dword, gpr), (dword, memgpr), (byte, imm)),
+        (0x6b, (dword, gpr), (dword, memgpr), (byte, signed_imm)),
         (0x69, (dword, gpr), (dword, memgpr), (dword, imm))
     ]
 
